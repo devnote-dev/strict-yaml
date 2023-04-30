@@ -1,0 +1,9 @@
+name: strict-yaml
+version: 0.1.0
+crystal: 1.8.0
+
+authors:
+  - Devonte W <https://github.com/devnote-dev>
+
+
+license: MIT

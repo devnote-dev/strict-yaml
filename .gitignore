@@ -1,0 +1,9 @@
+/docs/
+/lib/
+/bin/
+/.shards/
+/.vscode/
+*.dwarf
+*.exe
+
+/shard.lock
