@@ -22,22 +22,26 @@ module StrictYAML
     end
 
     private def next_node : Node?
-      token = next_token
+      parse_token next_token
+    end
 
+    private def parse_token(token : Token) : Node?
       case token.type
       when .string?
         if next_token.type.colon?
-          parse_mapping token
+          parse_list_or_mapping token
         else
           @tokens.unshift @prev.not_nil!
           Scalar.parse token.pos, token.value
         end
       when .colon?
-        parse_mapping token
+        parse_list_or_mapping token
       when .pipe?
         parse_pipe_scalar token
       when .greater?
         parse_greater_scalar token
+      when .list?
+        parse_list token
       when .space?, .newline?
         next_node
       when .eof?
@@ -131,7 +135,29 @@ module StrictYAML
       Scalar.parse join(token.pos, last.pos), value
     end
 
-    private def parse_mapping(token : Token) : Node
+    private def parse_list(token : Token) : Node
+      space = expect_next :space
+      indent = space.value.size
+      values = [] of Node
+
+      loop do
+        inner = next_token
+        case inner.type
+        when .eof?
+          break
+        when .space?
+          break if inner.value.size < indent
+        when .list?, .newline?
+          next
+        else
+          values << parse_token(inner).not_nil!
+        end
+      end
+
+      List.new join(token.pos, values.last.pos), values
+    end
+
+    private def parse_list_or_mapping(token : Token) : Node
       key = Scalar.new token.pos, token.value
       value = next_node || Null.new token.pos
 
