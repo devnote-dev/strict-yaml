@@ -110,7 +110,42 @@ describe StrictYAML::Parser do
   end
 
   describe "nested" do
-    pending "parses nested lists" { }
+    it "parses nested lists" do
+      tokens = StrictYAML::Lexer.new(<<-YAML).run
+        - foo
+        - - bar
+          - - baz
+        YAML
+
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::List
+      nodes[0].as(StrictYAML::List).values.size.should eq 2
+      nodes[0].as(StrictYAML::List).values[0].should be_a StrictYAML::Scalar
+      nodes[0].as(StrictYAML::List).values[1].should be_a StrictYAML::List
+
+      nodes[0]
+        .as(StrictYAML::List).values[1]
+        .as(StrictYAML::List).values.size.should eq 2
+
+      nodes[0]
+        .as(StrictYAML::List).values[1]
+        .as(StrictYAML::List).values[0].should be_a StrictYAML::Scalar
+
+      nodes[0]
+        .as(StrictYAML::List).values[1]
+        .as(StrictYAML::List).values[1].should be_a StrictYAML::List
+
+      nodes[0]
+        .as(StrictYAML::List).values[1]
+        .as(StrictYAML::List).values[1]
+        .as(StrictYAML::List).values.size.should eq 1
+
+      nodes[0]
+        .as(StrictYAML::List).values[1]
+        .as(StrictYAML::List).values[1]
+        .as(StrictYAML::List).values[0].should be_a StrictYAML::Scalar
+    end
 
     it "parses nested mappings" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
