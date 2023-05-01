@@ -61,14 +61,18 @@ module StrictYAML
       pos
     end
 
-    private def expect_next(type : Token::Type) : Token
-      token = next_token
-      raise "expected token #{type}; got #{token.type}" unless token.type == type
-      token
+    private def expect_next(type : Token::Type, *, allow_space : Bool = false) : Token
+      loop do
+        token = next_token
+        next if token.type.comment?
+        next if token.type.space? && allow_space
+        raise "expected token #{type}; got #{token.type}" unless token.type == type
+        return token
+      end
     end
 
     private def parse_pipe_scalar(token : Token) : Node
-      expect_next :newline
+      expect_next :newline, allow_space: true
       space = expect_next :space
       indent = space.value.size
       last = uninitialized Token
@@ -99,7 +103,7 @@ module StrictYAML
     end
 
     private def parse_greater_scalar(token : Token) : Node
-      expect_next :newline
+      expect_next :newline, allow_space: true
       space = expect_next :space
       indent = space.value.size
       last = uninitialized Token
