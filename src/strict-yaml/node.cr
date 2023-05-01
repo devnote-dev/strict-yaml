@@ -20,7 +20,37 @@ module StrictYAML
   class Scalar < Node
     property value : String
 
+    def self.parse(pos : Position, value : String)
+      if quoted? value
+        char = value[0]
+        return new pos, value.strip(char)
+      end
+
+      case value.downcase
+      when .in?("true", "yes", "on")
+        Boolean.new pos, true
+      when .in?("false", "no", "off")
+        Boolean.new pos, false
+      when "null"
+        Null.new pos
+      else
+        new pos, value
+      end
+    end
+
+    def self.quoted?(str : String) : Bool
+      (str.starts_with?('"') && str.ends_with?('"')) ||
+        (str.starts_with?('\'') && str.ends_with?('\''))
+    end
+
     def initialize(@pos : Position, @value : String)
+    end
+  end
+
+  class Boolean < Node
+    property value : Bool
+
+    def initialize(@pos : Position, @value : Bool)
     end
   end
 

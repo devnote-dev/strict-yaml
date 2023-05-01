@@ -4,7 +4,6 @@ module StrictYAML
     @prev : Token?
 
     def initialize(@tokens : Array(Token))
-      @prev = uninitialized Token
     end
 
     def parse : Array(Node)
@@ -31,7 +30,7 @@ module StrictYAML
           parse_mapping token
         else
           @tokens.unshift @prev.not_nil!
-          Scalar.new token.pos, token.value
+          Scalar.parse token.pos, token.value
         end
       when .colon?
         parse_mapping token
@@ -96,7 +95,7 @@ module StrictYAML
         end
       end
 
-      Scalar.new join(token.pos, last.pos), value
+      Scalar.parse join(token.pos, last.pos), value
     end
 
     private def parse_greater_scalar(token : Token) : Node
@@ -125,7 +124,7 @@ module StrictYAML
         end
       end
 
-      Scalar.new join(token.pos, last.pos), value
+      Scalar.parse join(token.pos, last.pos), value
     end
 
     private def parse_mapping(token : Token) : Node
