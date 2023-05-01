@@ -6,6 +6,33 @@ module StrictYAML
     def initialize(@tokens : Array(Token))
     end
 
+    def parse_documents : Array(Document)
+      docs = [] of Document
+      nodes = [] of Node
+
+      parse.each do |node|
+        if node.is_a? DocStart
+          nodes.clear
+          nodes << node
+        elsif node.is_a? DocEnd
+          docs << Document.new nodes.dup
+          nodes.clear
+        else
+          nodes << node
+        end
+      end
+
+      unless nodes.empty?
+        docs << Document.new nodes
+      end
+
+      docs
+    end
+
+    def parse_document : Document
+      parse_documents.first
+    end
+
     def parse : Array(Node)
       nodes = [] of Node
 
