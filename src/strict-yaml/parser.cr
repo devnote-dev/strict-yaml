@@ -46,8 +46,10 @@ module StrictYAML
         DocStart.new token.pos
       when .doc_end?
         DocEnd.new token.pos
-      when .space?, .newline?
+      when .comment?, .space?, .newline?
         next_node
+      when .directive?
+        Directive.new token.pos, token.value
       when .eof?
         nil
       end

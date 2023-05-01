@@ -72,6 +72,13 @@ module StrictYAML
   class Null < Node
   end
 
+  class Directive < Node
+    property value : String
+
+    def initialize(@pos : Position, @value : String)
+    end
+  end
+
   class DocStart < Node
   end
 
