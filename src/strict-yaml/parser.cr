@@ -29,13 +29,13 @@ module StrictYAML
       case token.type
       when .string?
         if next_token.type.colon?
-          parse_list_or_mapping token
+          parse_mapping token
         else
           @tokens.unshift @prev.not_nil!
           Scalar.parse token.pos, token.value
         end
       when .colon?
-        parse_list_or_mapping token
+        parse_mapping token
       when .pipe?
         parse_pipe_scalar token
       when .greater?
@@ -161,7 +161,7 @@ module StrictYAML
       List.new join(token.pos, values.last.pos), values
     end
 
-    private def parse_list_or_mapping(token : Token) : Node
+    private def parse_mapping(token : Token) : Node
       key = Scalar.new token.pos, token.value
       value = next_node || Null.new token.pos
 
