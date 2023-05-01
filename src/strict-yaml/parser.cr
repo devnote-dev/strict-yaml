@@ -86,6 +86,10 @@ module StrictYAML
       @prev = @tokens.shift
     end
 
+    private def next_token? : Token?
+      @prev = @tokens.shift?
+    end
+
     private def end? : Bool
       @tokens.empty?
     end
@@ -96,6 +100,10 @@ module StrictYAML
       pos.column_stop = stop.column_stop
 
       pos
+    end
+
+    private def expect_next?(type : Token::Type, *, allow_space : Bool = false) : Token?
+      expect_next(type, allow_space: allow_space) rescue nil
     end
 
     private def expect_next(type : Token::Type, *, allow_space : Bool = false) : Token
@@ -169,25 +177,34 @@ module StrictYAML
     end
 
     private def parse_list(token : Token) : Node
-      space = expect_next :space
-      indent = space.value.size
       values = [] of Node
+      last = uninitialized Token
+      @tokens.unshift token
 
       loop do
-        inner = next_token
-        case inner.type
-        when .eof?
+        unless inner = next_token?
+          last = token
           break
-        when .space?
-          break if inner.value.size < indent
-        when .list?, .newline?
+        end
+
+        case inner.type
+        when .space?, .newline?
           next
+        when .list?
+          if node = parse_token(next_token)
+            values << node
+          else
+            values << Null.new inner.pos
+            last = inner
+            break
+          end
         else
-          values << parse_token(inner).not_nil!
+          last = inner
+          break
         end
       end
 
-      List.new join(token.pos, values.last.pos), values
+      List.new join(token.pos, last.pos), values
     end
 
     private def parse_mapping(token : Token) : Node
