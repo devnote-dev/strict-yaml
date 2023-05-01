@@ -42,6 +42,10 @@ module StrictYAML
         parse_greater_scalar token
       when .list?
         parse_list token
+      when .doc_start?
+        DocStart.new token.pos
+      when .doc_end?
+        DocEnd.new token.pos
       when .space?, .newline?
         next_node
       when .eof?
