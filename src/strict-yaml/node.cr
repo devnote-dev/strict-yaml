@@ -55,10 +55,10 @@ module StrictYAML
   end
 
   class Mapping < Node
-    property key : Scalar | Null
+    property key : Node
     property value : Node?
 
-    def initialize(@pos : Position, @key : Scalar | Null, @value : Node?)
+    def initialize(@pos : Position, @key : Node, @value : Node?)
     end
   end
 
