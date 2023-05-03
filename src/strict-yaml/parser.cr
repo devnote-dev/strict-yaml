@@ -208,7 +208,7 @@ module StrictYAML
     end
 
     private def parse_mapping(token : Token) : Node
-      key = Scalar.new token.pos, token.value
+      key = Scalar.parse token.pos, token.value
       value = next_node || Null.new token.pos
 
       Mapping.new join(token.pos, value.pos), key, value
