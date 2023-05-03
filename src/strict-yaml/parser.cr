@@ -63,9 +63,9 @@ module StrictYAML
         end
       when .colon?
         parse_mapping token
-      when .pipe?
+      when .pipe?, .pipe_strip?
         parse_pipe_scalar token
-      when .fold?
+      when .fold?, .fold_strip?
         parse_folding_scalar token
       when .list?
         parse_list token
@@ -142,6 +142,8 @@ module StrictYAML
             io << inner.value
           end
         end
+
+        io << '\n' if token.type.pipe?
       end
 
       Scalar.parse join(token.pos, last.pos), value
@@ -171,6 +173,8 @@ module StrictYAML
             io << inner.value
           end
         end
+
+        io << '\n' if token.type.fold?
       end
 
       Scalar.parse join(token.pos, last.pos), value

@@ -4,7 +4,9 @@ module StrictYAML
       String
       Colon
       Pipe
+      PipeStrip
       Fold
+      FoldStrip
       List
       DocumentStart
       DocumentEnd
@@ -66,12 +68,20 @@ module StrictYAML
         @token.type = :colon
         finalize_token true
       when '|'
-        next_char
-        @token.type = :pipe
+        if next_char == '-'
+          next_char
+          @token.type = :pipe_strip
+        else
+          @token.type = :pipe
+        end
         finalize_token true
       when '>'
-        next_char
-        @token.type = :fold
+        if next_char == '-'
+          next_char
+          @token.type = :fold_strip
+        else
+          @token.type = :fold
+        end
         finalize_token true
       when '-'
         if next_char == '-' && next_char == '-'
