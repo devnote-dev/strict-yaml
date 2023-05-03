@@ -11,10 +11,10 @@ module StrictYAML
       nodes = [] of Node
 
       parse.each do |node|
-        if node.is_a? DocStart
+        if node.is_a? DocumentStart
           nodes.clear
           nodes << node
-        elsif node.is_a? DocEnd
+        elsif node.is_a? DocumentEnd
           docs << Document.new nodes.dup
           nodes.clear
         else
@@ -69,10 +69,10 @@ module StrictYAML
         parse_greater_scalar token
       when .list?
         parse_list token
-      when .doc_start?
-        DocStart.new token.pos
-      when .doc_end?
-        DocEnd.new token.pos
+      when .document_start?
+        DocumentStart.new token.pos
+      when .document_end?
+        DocumentEnd.new token.pos
       when .comment?, .space?, .newline?
         next_node
       when .directive?

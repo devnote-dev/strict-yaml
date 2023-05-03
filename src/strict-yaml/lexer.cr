@@ -6,8 +6,8 @@ module StrictYAML
       Pipe
       Greater
       List
-      DocStart
-      DocEnd
+      DocumentStart
+      DocumentEnd
       Comment
       Directive
 
@@ -76,7 +76,7 @@ module StrictYAML
       when '-'
         if next_char == '-' && next_char == '-'
           next_char
-          @token.type = :doc_start
+          @token.type = :document_start
         else
           @token.type = :list
         end
@@ -84,7 +84,7 @@ module StrictYAML
       when '.'
         if next_char == '.' && next_char == '.'
           next_char
-          @token.type = :doc_end
+          @token.type = :document_end
           finalize_token true
         else
           lex_string

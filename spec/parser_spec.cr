@@ -175,8 +175,8 @@ describe StrictYAML::Parser do
     nodes = StrictYAML::Parser.new(tokens).parse
 
     nodes[0].should be_a StrictYAML::Directive
-    nodes[1].should be_a StrictYAML::DocStart
+    nodes[1].should be_a StrictYAML::DocumentStart
     nodes[2].should be_a StrictYAML::Mapping
-    nodes[3].should be_a StrictYAML::DocEnd
+    nodes[3].should be_a StrictYAML::DocumentEnd
   end
 end

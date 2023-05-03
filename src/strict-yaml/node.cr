@@ -79,9 +79,9 @@ module StrictYAML
     end
   end
 
-  class DocStart < Node
+  class DocumentStart < Node
   end
 
-  class DocEnd < Node
+  class DocumentEnd < Node
   end
 end
