@@ -4,7 +4,7 @@ module StrictYAML
       String
       Colon
       Pipe
-      Greater
+      Fold
       List
       DocumentStart
       DocumentEnd
@@ -71,7 +71,7 @@ module StrictYAML
         finalize_token true
       when '>'
         next_char
-        @token.type = :greater
+        @token.type = :fold
         finalize_token true
       when '-'
         if next_char == '-' && next_char == '-'

@@ -65,8 +65,8 @@ module StrictYAML
         parse_mapping token
       when .pipe?
         parse_pipe_scalar token
-      when .greater?
-        parse_greater_scalar token
+      when .fold?
+        parse_folding_scalar token
       when .list?
         parse_list token
       when .document_start?
@@ -147,7 +147,7 @@ module StrictYAML
       Scalar.parse join(token.pos, last.pos), value
     end
 
-    private def parse_greater_scalar(token : Token) : Node
+    private def parse_folding_scalar(token : Token) : Node
       expect_next :newline, allow_space: true
       space = expect_next :space
       indent = space.value.size
