@@ -24,6 +24,21 @@ describe StrictYAML::Parser do
       nodes[0].as(StrictYAML::Scalar).value.should eq "a scaling pipe string\nwrapped with newlines\n"
     end
 
+    it "parses pipe keep scalars" do
+      tokens = StrictYAML::Lexer.new(<<-YAML).run
+        |+
+          a scaling pipe string
+          wrapped with newlines
+
+
+        YAML
+
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Scalar
+      nodes[0].as(StrictYAML::Scalar).value.should eq "a scaling pipe string\nwrapped with newlines\n\n"
+    end
+
     it "parses pipe strip scalars" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
         |-
@@ -48,6 +63,21 @@ describe StrictYAML::Parser do
 
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces\n"
+    end
+
+    it "parses folding keep scalars" do
+      tokens = StrictYAML::Lexer.new(<<-YAML).run
+        >+
+          a folding string
+          wrapped with spaces
+
+
+        YAML
+
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Scalar
+      nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces\n\n"
     end
 
     it "parses folding strip scalars" do

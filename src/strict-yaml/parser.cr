@@ -63,9 +63,9 @@ module StrictYAML
         end
       when .colon?
         parse_mapping token
-      when .pipe?, .pipe_strip?
+      when .pipe?, .pipe_keep?, .pipe_strip?
         parse_pipe_scalar token
-      when .fold?, .fold_strip?
+      when .fold?, .fold_keep?, .fold_strip?
         parse_folding_scalar token
       when .list?
         parse_list token
@@ -136,15 +136,14 @@ module StrictYAML
             else
               io << inner.value.byte_slice indent
             end
-          when .newline?
-            io << '\n'
           else
             io << inner.value
           end
         end
-
-        io << '\n' if token.type.pipe?
       end
+
+      value = value.rstrip('\n') unless token.type.pipe_keep?
+      value += "\n" if token.type.pipe?
 
       Scalar.parse join(token.pos, last.pos), value
     end
@@ -168,14 +167,23 @@ module StrictYAML
               break
             end
           when .newline?
-            io << ' '
+            if inner.value.size > 1
+              if token.type.fold_keep?
+                io << inner.value
+              else
+                io << inner.value.byte_slice 1
+              end
+            else
+              io << ' '
+            end
           else
             io << inner.value
           end
         end
-
-        io << '\n' if token.type.fold?
       end
+
+      value = value.rstrip unless token.type.fold_keep?
+      value += "\n" if token.type.fold?
 
       Scalar.parse join(token.pos, last.pos), value
     end

@@ -4,8 +4,10 @@ module StrictYAML
       String
       Colon
       Pipe
+      PipeKeep
       PipeStrip
       Fold
+      FoldKeep
       FoldStrip
       List
       DocumentStart
@@ -68,7 +70,11 @@ module StrictYAML
         @token.type = :colon
         finalize_token true
       when '|'
-        if next_char == '-'
+        case next_char
+        when '+'
+          next_char
+          @token.type = :pipe_keep
+        when '-'
           next_char
           @token.type = :pipe_strip
         else
@@ -76,7 +82,11 @@ module StrictYAML
         end
         finalize_token true
       when '>'
-        if next_char == '-'
+        case next_char
+        when '+'
+          next_char
+          @token.type = :fold_keep
+        when '-'
           next_char
           @token.type = :fold_strip
         else
@@ -150,7 +160,7 @@ module StrictYAML
       end
 
       @token.type = :newline
-      finalize_token false
+      finalize_token true
     end
 
     private def lex_string : Nil
