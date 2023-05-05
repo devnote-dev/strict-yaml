@@ -26,11 +26,14 @@ module StrictYAML
         docs << Document.new nodes
       end
 
-      docs
-    end
+      # docs.each do |document|
+      #   root = document.nodes.first
+      #   unless document.nodes.all? &.is_a? root
+      #     raise "mismatched root document types"
+      #   end
+      # end
 
-    def parse_document : Document
-      parse_documents.first
+      docs
     end
 
     def parse : Array(Node)
