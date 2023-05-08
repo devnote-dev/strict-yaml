@@ -29,5 +29,13 @@ describe StrictYAML do
 
     docs.should be_a Array(StrictYAML::Document)
     docs.size.should eq 2
+
+    docs[0].nodes.size.should eq 2
+    docs[0].nodes[0].should be_a StrictYAML::Mapping
+    docs[0].nodes[1].should be_a StrictYAML::Mapping
+
+    docs[1].nodes.size.should eq 1
+    docs[1].nodes[0].should be_a StrictYAML::List
+    docs[1].nodes[0].as(StrictYAML::List).values.size.should eq 2
   end
 end
