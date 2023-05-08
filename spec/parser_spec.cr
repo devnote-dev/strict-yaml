@@ -1,7 +1,7 @@
 require "./spec_helper"
 
 describe StrictYAML::Parser do
-  describe "raw values" do
+  describe StrictYAML::Scalar do
     it "parses raw strings" do
       tokens = StrictYAML::Lexer.new("foo bar baz").run
       nodes = StrictYAML::Parser.new(tokens).parse
@@ -9,6 +9,23 @@ describe StrictYAML::Parser do
       nodes.size.should eq 1
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "foo bar baz"
+    end
+
+    it "parses multi-line strings" do
+      tokens = StrictYAML::Lexer.new(<<-YAML).run
+        foo
+        
+        bar
+        
+        baz
+        YAML
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes.size.should eq 3
+      nodes[0].should be_a StrictYAML::Scalar
+      nodes[0].as(StrictYAML::Scalar).value.should eq "foo"
+      nodes[1].as(StrictYAML::Scalar).value.should eq "bar"
+      nodes[2].as(StrictYAML::Scalar).value.should eq "baz"
     end
 
     it "parses pipe scalars" do
@@ -92,7 +109,9 @@ describe StrictYAML::Parser do
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces"
     end
+  end
 
+  describe StrictYAML::List do
     it "parses raw lists" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
         - foo
@@ -106,66 +125,6 @@ describe StrictYAML::Parser do
       nodes[0].as(StrictYAML::List).values[0].should be_a StrictYAML::Scalar
     end
 
-    it "parses mappings" do
-      tokens = StrictYAML::Lexer.new("foo: bar").run
-      nodes = StrictYAML::Parser.new(tokens).parse
-
-      nodes[0].should be_a StrictYAML::Mapping
-      nodes[0].as(StrictYAML::Mapping).key.should be_a StrictYAML::Scalar
-      nodes[0].as(StrictYAML::Mapping).value.should be_a StrictYAML::Scalar
-    end
-
-    it "parses null value" do
-      tokens = StrictYAML::Lexer.new("null").run
-      nodes = StrictYAML::Parser.new(tokens).parse
-
-      nodes[0].should be_a StrictYAML::Null
-    end
-
-    describe "booleans" do
-      it "parses truthy values" do
-        tokens = StrictYAML::Lexer.new("true").run
-        nodes = StrictYAML::Parser.new(tokens).parse
-
-        nodes[0].should be_a StrictYAML::Boolean
-        nodes[0].as(StrictYAML::Boolean).value.should be_true
-
-        tokens = StrictYAML::Lexer.new("on").run
-        nodes = StrictYAML::Parser.new(tokens).parse
-
-        nodes[0].should be_a StrictYAML::Boolean
-        nodes[0].as(StrictYAML::Boolean).value.should be_true
-
-        tokens = StrictYAML::Lexer.new("yes").run
-        nodes = StrictYAML::Parser.new(tokens).parse
-
-        nodes[0].should be_a StrictYAML::Boolean
-        nodes[0].as(StrictYAML::Boolean).value.should be_true
-      end
-
-      it "parses truthy values" do
-        tokens = StrictYAML::Lexer.new("false").run
-        nodes = StrictYAML::Parser.new(tokens).parse
-
-        nodes[0].should be_a StrictYAML::Boolean
-        nodes[0].as(StrictYAML::Boolean).value.should be_false
-
-        tokens = StrictYAML::Lexer.new("no").run
-        nodes = StrictYAML::Parser.new(tokens).parse
-
-        nodes[0].should be_a StrictYAML::Boolean
-        nodes[0].as(StrictYAML::Boolean).value.should be_false
-
-        tokens = StrictYAML::Lexer.new("off").run
-        nodes = StrictYAML::Parser.new(tokens).parse
-
-        nodes[0].should be_a StrictYAML::Boolean
-        nodes[0].as(StrictYAML::Boolean).value.should be_false
-      end
-    end
-  end
-
-  describe "nested" do
     it "parses nested lists" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
         - foo
@@ -202,6 +161,17 @@ describe StrictYAML::Parser do
         .as(StrictYAML::List).values[1]
         .as(StrictYAML::List).values[0].should be_a StrictYAML::Scalar
     end
+  end
+
+  describe StrictYAML::Mapping do
+    it "parses mappings" do
+      tokens = StrictYAML::Lexer.new("foo: bar").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Mapping
+      nodes[0].as(StrictYAML::Mapping).key.should be_a StrictYAML::Scalar
+      nodes[0].as(StrictYAML::Mapping).value.should be_a StrictYAML::Scalar
+    end
 
     it "parses nested mappings" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
@@ -227,7 +197,58 @@ describe StrictYAML::Parser do
     end
   end
 
-  it "parses directives" do
+  describe StrictYAML::Null do
+    it "parses null value" do
+      tokens = StrictYAML::Lexer.new("null").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Null
+    end
+  end
+
+  describe StrictYAML::Boolean do
+    it "parses truthy values" do
+      tokens = StrictYAML::Lexer.new("true").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Boolean
+      nodes[0].as(StrictYAML::Boolean).value.should be_true
+
+      tokens = StrictYAML::Lexer.new("on").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Boolean
+      nodes[0].as(StrictYAML::Boolean).value.should be_true
+
+      tokens = StrictYAML::Lexer.new("yes").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Boolean
+      nodes[0].as(StrictYAML::Boolean).value.should be_true
+    end
+
+    it "parses falsey values" do
+      tokens = StrictYAML::Lexer.new("false").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Boolean
+      nodes[0].as(StrictYAML::Boolean).value.should be_false
+
+      tokens = StrictYAML::Lexer.new("no").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Boolean
+      nodes[0].as(StrictYAML::Boolean).value.should be_false
+
+      tokens = StrictYAML::Lexer.new("off").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Boolean
+      nodes[0].as(StrictYAML::Boolean).value.should be_false
+    end
+  end
+
+  describe StrictYAML::Directive do
     tokens = StrictYAML::Lexer.new(<<-YAML).run
       %YAML 1.2
       ---
