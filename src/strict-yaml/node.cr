@@ -15,6 +15,8 @@ module StrictYAML
 
     def initialize(@pos : Position)
     end
+
+    abstract def object : Any::Type
   end
 
   class Scalar < Node
@@ -45,6 +47,10 @@ module StrictYAML
 
     def initialize(@pos : Position, @value : String)
     end
+
+    def object : Any::Type
+      @value
+    end
   end
 
   class Boolean < Node
@@ -52,13 +58,21 @@ module StrictYAML
 
     def initialize(@pos : Position, @value : Bool)
     end
+
+    def object : Any::Type
+      @value
+    end
   end
 
   class Mapping < Node
     property key : Node
-    property value : Node?
+    property value : Node
 
-    def initialize(@pos : Position, @key : Node, @value : Node?)
+    def initialize(@pos : Position, @key : Node, @value : Node)
+    end
+
+    def object : Any::Type
+      {@key.object.as(Any::Type) => @value.object.as(Any::Type)}
     end
   end
 
@@ -67,9 +81,16 @@ module StrictYAML
 
     def initialize(@pos : Position, @values : Array(Node))
     end
+
+    def object : Any::Type
+      @values.map(&.object.as(Any::Type))
+    end
   end
 
   class Null < Node
+    def object : Any::Type
+      nil
+    end
   end
 
   class Directive < Node
@@ -77,11 +98,21 @@ module StrictYAML
 
     def initialize(@pos : Position, @value : String)
     end
+
+    def object : Any::Type
+      nil
+    end
   end
 
   class DocumentStart < Node
+    def object : Any::Type
+      nil
+    end
   end
 
   class DocumentEnd < Node
+    def object : Any::Type
+      nil
+    end
   end
 end
