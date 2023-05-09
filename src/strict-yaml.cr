@@ -8,14 +8,18 @@ module StrictYAML
   end
 
   def self.parse_all(source : String) : Array(Any)
-    parse_documents(source).map do |document|
-      case nodes = document.nodes
-      when Array(List)
-        Any.new nodes.map &.object
-      when Array(Mapping)
-        Any.new nodes.map(&.object).reduce { |acc, i| acc.merge i }
+    parse_documents(source).group_by(&.nodes).keys.map do |nodes|
+      case nodes[0]
+      when List
+        Any.new nodes.map { |n| n.object }
+      when Mapping
+        hash = nodes.map(&.object).reduce({} of Any => Any) do |acc, i|
+          acc.merge i.as(Hash(Any, Any))
+        end
+
+        Any.new hash
       else
-        Any.new nodes.first.object
+        Any.new nodes[0].object
       end
     end
   end

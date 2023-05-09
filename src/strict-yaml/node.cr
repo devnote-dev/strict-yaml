@@ -72,7 +72,7 @@ module StrictYAML
     end
 
     def object : Any::Type
-      {@key.object.as(Any::Type) => @value.object.as(Any::Type)}
+      {Any.new(@key.object) => Any.new(@value.object)}
     end
   end
 
@@ -83,7 +83,7 @@ module StrictYAML
     end
 
     def object : Any::Type
-      @values.map(&.object.as(Any::Type))
+      @values.map { |n| Any.new n.object }
     end
   end
 
