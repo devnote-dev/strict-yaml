@@ -11,7 +11,11 @@ module StrictYAML
     parse_documents(source).group_by(&.nodes).keys.map do |nodes|
       case nodes[0]
       when List
-        Any.new nodes.map { |n| n.object }
+        arr = nodes.map(&.object).reduce([] of Any) do |acc, i|
+          acc + i.as(Array(Any))
+        end
+
+        Any.new arr
       when Mapping
         hash = nodes.map(&.object).reduce({} of Any => Any) do |acc, i|
           acc.merge i.as(Hash(Any, Any))
