@@ -19,6 +19,7 @@ describe StrictYAML::Parser do
         
         baz
         YAML
+
       nodes = StrictYAML::Parser.new(tokens).parse
 
       nodes.size.should eq 3

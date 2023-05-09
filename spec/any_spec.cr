@@ -14,12 +14,10 @@ describe StrictYAML::Any do
 
   it "parses booleans" do
     any = StrictYAML.parse "true"
-
     any.raw.should be_a Bool
     any.as_bool.should be_true
 
     any = StrictYAML.parse "false"
-
     any.raw.should be_a Bool
     any.as_bool.should be_false
 
@@ -37,7 +35,6 @@ describe StrictYAML::Any do
 
   it "parses null" do
     any = StrictYAML.parse "null"
-
     any.raw.should be_nil
 
     expect_raises(TypeCastError) { any.as_bool }

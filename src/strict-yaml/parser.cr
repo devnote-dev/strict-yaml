@@ -32,11 +32,12 @@ module StrictYAML
         end
 
         document.nodes = case root
-                         when Scalar        then parse root, document.nodes
-                         when Boolean       then parse root, document.nodes
-                         when Mapping, List then document.nodes
-                         when Null          then parse root, document.nodes
-                         else                    raise "unreachable"
+                         when Scalar, Boolean, Null
+                           parse root, document.nodes
+                         when Mapping, List
+                           document.nodes
+                         else
+                           raise "unreachable"
                          end
       end
 
@@ -232,6 +233,13 @@ module StrictYAML
       Scalar.parse join(token.pos, last.pos), value
     end
 
+    private def parse_mapping(token : Token) : Node
+      key = Scalar.parse token.pos, token.value
+      value = next_node || Null.new token.pos
+
+      Mapping.new join(token.pos, value.pos), key, value
+    end
+
     private def parse_list(token : Token) : Node
       values = [] of Node
       last = uninitialized Token
@@ -261,13 +269,6 @@ module StrictYAML
       end
 
       List.new join(token.pos, last.pos), values
-    end
-
-    private def parse_mapping(token : Token) : Node
-      key = Scalar.parse token.pos, token.value
-      value = next_node || Null.new token.pos
-
-      Mapping.new join(token.pos, value.pos), key, value
     end
   end
 end
