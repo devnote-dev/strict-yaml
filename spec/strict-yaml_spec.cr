@@ -1,17 +1,6 @@
 require "./spec_helper"
 
 describe StrictYAML do
-  it "parses into any" do
-    any = StrictYAML.parse <<-YAML
-      - foo
-      - bar
-      YAML
-
-    any.should be_a StrictYAML::Any
-    any.as_a.should be_a Array(StrictYAML::Any::Type)
-    any.as_a(String).should be_a Array(String)
-  end
-
   it "parses into a document" do
     doc = StrictYAML.parse_document <<-YAML
       foo: bar

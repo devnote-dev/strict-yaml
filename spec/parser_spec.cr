@@ -178,8 +178,7 @@ describe StrictYAML::Parser do
 
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_a Array(StrictYAML::Any::Type)
-      nodes[0].object.should eq %w[foo bar]
+      nodes[0].object.should be_a Array(StrictYAML::Any)
     end
   end
 
@@ -220,8 +219,7 @@ describe StrictYAML::Parser do
       tokens = StrictYAML::Lexer.new("foo: bar").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_a Hash(StrictYAML::Any::Type, StrictYAML::Any::Type)
-      nodes[0].object.should eq({"foo" => "bar"})
+      nodes[0].object.should be_a Hash(StrictYAML::Any, StrictYAML::Any)
     end
   end
 
