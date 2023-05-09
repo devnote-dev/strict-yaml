@@ -76,4 +76,34 @@ describe StrictYAML::Any do
     hash.should be_a Hash(String, String)
     hash.should eq({"foo" => "bar", "baz" => "qux"})
   end
+
+  {% for base in %w[8 16 32 64 128] %}
+    it "parses Int{{base.id}} numbers" do
+      %res = 12 * {{base.id}}
+      any = StrictYAML.parse %res.to_s
+      any.raw.should be_a String
+
+      value = any.to_i{{base.id}}
+      value.should be_a Int{{base.id}}
+      value.should eq %res
+    end
+  {% end %}
+
+  it "parses Float32 numbers" do
+    any = StrictYAML.parse "3.14159265"
+    any.raw.should be_a String
+
+    value = any.to_f32
+    value.should be_a Float32
+    value.should eq 3.14159265_f32
+  end
+
+  it "parses Float64 numbers" do
+    any = StrictYAML.parse "3.14159265"
+    any.raw.should be_a String
+
+    value = any.to_f64
+    value.should be_a Float64
+    value.should eq 3.14159265
+  end
 end
