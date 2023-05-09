@@ -10,7 +10,11 @@ module StrictYAML
     forward_missing_to @raw
 
     def as_s : String
-      @raw.as(String)
+      if @raw.is_a? Bool
+        @raw.to_s
+      else
+        @raw.as(String)
+      end
     end
 
     def as_bool : Bool

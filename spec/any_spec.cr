@@ -27,7 +27,7 @@ describe StrictYAML::Any do
     expect_raises(TypeCastError) { any.as_h }
   end
 
-  pending "allows converting booleans to scalars" do
+  it "allows converting booleans to scalars" do
     any = StrictYAML.parse "true"
     any.as_s.should eq "true"
 
