@@ -14,9 +14,9 @@ describe StrictYAML::Parser do
     it "parses multi-line strings" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
         foo
-        
+
         bar
-        
+
         baz
         YAML
 

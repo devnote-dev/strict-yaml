@@ -122,9 +122,8 @@ module StrictYAML
       @token.pos.line_stop = @line
       @token.pos.column_stop = @reader.pos
 
-      if with_value
-        @token.value = @source[@token.pos.column_start...@token.pos.column_stop]
-      end
+      return unless with_value
+      @token.value = @source[@token.pos.column_start...@token.pos.column_stop]
     end
 
     private def current_char : Char

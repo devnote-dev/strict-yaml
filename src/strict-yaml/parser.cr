@@ -84,12 +84,9 @@ module StrictYAML
       nodes = [] of Node
 
       loop do
-        if node = next_node
-          nodes << node
-          break if end?
-        else
-          break
-        end
+        break unless node = next_node
+        nodes << node
+        break if end?
       end
 
       nodes
@@ -105,7 +102,7 @@ module StrictYAML
         if next_token.type.colon?
           parse_mapping token
         else
-          @tokens.unshift @prev.not_nil!
+          @tokens.unshift @prev if @prev
           Scalar.parse token.pos, token.value
         end
       when .colon?
