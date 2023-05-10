@@ -241,40 +241,28 @@ describe StrictYAML::Parser do
   end
 
   describe StrictYAML::Boolean do
-    it "parses truthy values" do
+    it "parses true values" do
       tokens = StrictYAML::Lexer.new("true").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
       nodes[0].should be_a StrictYAML::Boolean
       nodes[0].as(StrictYAML::Boolean).value.should be_true
 
-      tokens = StrictYAML::Lexer.new("on").run
-      nodes = StrictYAML::Parser.new(tokens).parse
-
-      nodes[0].should be_a StrictYAML::Boolean
-      nodes[0].as(StrictYAML::Boolean).value.should be_true
-
-      tokens = StrictYAML::Lexer.new("yes").run
+      tokens = StrictYAML::Lexer.new("tRUE").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
       nodes[0].should be_a StrictYAML::Boolean
       nodes[0].as(StrictYAML::Boolean).value.should be_true
     end
 
-    it "parses falsey values" do
+    it "parses false values" do
       tokens = StrictYAML::Lexer.new("false").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
       nodes[0].should be_a StrictYAML::Boolean
       nodes[0].as(StrictYAML::Boolean).value.should be_false
 
-      tokens = StrictYAML::Lexer.new("no").run
-      nodes = StrictYAML::Parser.new(tokens).parse
-
-      nodes[0].should be_a StrictYAML::Boolean
-      nodes[0].as(StrictYAML::Boolean).value.should be_false
-
-      tokens = StrictYAML::Lexer.new("off").run
+      tokens = StrictYAML::Lexer.new("FaLsE").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
       nodes[0].should be_a StrictYAML::Boolean

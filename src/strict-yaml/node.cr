@@ -29,14 +29,10 @@ module StrictYAML
       end
 
       case value.downcase
-      when .in?("true", "yes", "on")
-        Boolean.new pos, true
-      when .in?("false", "no", "off")
-        Boolean.new pos, false
-      when "null"
-        Null.new pos
-      else
-        new pos, value
+      when "true"  then Boolean.new pos, true
+      when "false" then Boolean.new pos, false
+      when "null"  then Null.new pos
+      else              new pos, value
       end
     end
 
