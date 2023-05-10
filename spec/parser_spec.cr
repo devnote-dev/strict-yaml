@@ -111,12 +111,12 @@ describe StrictYAML::Parser do
       nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces"
     end
 
-    it "returns the crystal type object" do
+    it "parses the crystal type object" do
       tokens = StrictYAML::Lexer.new("foo bar baz").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_a String
-      nodes[0].object.should eq "foo bar baz"
+      nodes[0].to_object.should be_a String
+      nodes[0].to_object.should eq "foo bar baz"
     end
   end
 
@@ -171,7 +171,7 @@ describe StrictYAML::Parser do
         .as(StrictYAML::List).values[0].should be_a StrictYAML::Scalar
     end
 
-    it "returns the crystal type object" do
+    it "parses the crystal type object" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
         - foo
         - bar
@@ -179,7 +179,7 @@ describe StrictYAML::Parser do
 
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_a Array(StrictYAML::Any)
+      nodes[0].to_object.should be_a Array(StrictYAML::Any)
     end
   end
 
@@ -216,11 +216,11 @@ describe StrictYAML::Parser do
         .as(StrictYAML::Mapping).value.should be_a StrictYAML::Null
     end
 
-    it "returns the crystal type object" do
+    it "parses the crystal type object" do
       tokens = StrictYAML::Lexer.new("foo: bar").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_a Hash(StrictYAML::Any, StrictYAML::Any)
+      nodes[0].to_object.should be_a Hash(StrictYAML::Any, StrictYAML::Any)
     end
   end
 
@@ -232,11 +232,11 @@ describe StrictYAML::Parser do
       nodes[0].should be_a StrictYAML::Null
     end
 
-    it "returns the crystal type object" do
+    it "parses the crystal type object" do
       tokens = StrictYAML::Lexer.new("null").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_nil
+      nodes[0].to_object.should be_nil
     end
   end
 
@@ -269,20 +269,20 @@ describe StrictYAML::Parser do
       nodes[0].as(StrictYAML::Boolean).value.should be_false
     end
 
-    it "returns the crystal type object" do
+    it "parses the crystal type object" do
       tokens = StrictYAML::Lexer.new("true").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_a Bool
-      nodes[0].object.should be_true
+      nodes[0].to_object.should be_a Bool
+      nodes[0].to_object.should be_true
     end
 
-    it "returns the crystal type object" do
+    it "parses the crystal type object" do
       tokens = StrictYAML::Lexer.new("false").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
-      nodes[0].object.should be_a Bool
-      nodes[0].object.should be_false
+      nodes[0].to_object.should be_a Bool
+      nodes[0].to_object.should be_false
     end
   end
 

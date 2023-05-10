@@ -16,7 +16,7 @@ module StrictYAML
     def initialize(@pos : Position)
     end
 
-    abstract def object : Any::Type
+    abstract def to_object : Any::Type
   end
 
   class Scalar < Node
@@ -44,7 +44,7 @@ module StrictYAML
     def initialize(@pos : Position, @value : String)
     end
 
-    def object : Any::Type
+    def to_object : Any::Type
       @value
     end
   end
@@ -55,13 +55,13 @@ module StrictYAML
     def initialize(@pos : Position, @value : Bool)
     end
 
-    def object : Any::Type
+    def to_object : Any::Type
       @value
     end
   end
 
   class Null < Node
-    def object : Any::Type
+    def to_object : Any::Type
       nil
     end
   end
@@ -73,8 +73,8 @@ module StrictYAML
     def initialize(@pos : Position, @key : Node, @value : Node)
     end
 
-    def object : Any::Type
-      {Any.new(@key.object) => Any.new(@value.object)}
+    def to_object : Any::Type
+      {Any.new(@key.to_object) => Any.new(@value.to_object)}
     end
   end
 
@@ -84,8 +84,8 @@ module StrictYAML
     def initialize(@pos : Position, @values : Array(Node))
     end
 
-    def object : Any::Type
-      @values.map { |n| Any.new n.object }
+    def to_object : Any::Type
+      @values.map { |n| Any.new n.to_object }
     end
   end
 
@@ -95,19 +95,19 @@ module StrictYAML
     def initialize(@pos : Position, @value : String)
     end
 
-    def object : Any::Type
+    def to_object : Any::Type
       nil
     end
   end
 
   class DocumentStart < Node
-    def object : Any::Type
+    def to_object : Any::Type
       nil
     end
   end
 
   class DocumentEnd < Node
-    def object : Any::Type
+    def to_object : Any::Type
       nil
     end
   end
