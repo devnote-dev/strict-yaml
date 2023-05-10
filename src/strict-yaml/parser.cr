@@ -34,7 +34,7 @@ module StrictYAML
         document.nodes = case root
                          when Scalar, Boolean, Null
                            parse root, document.nodes
-                         when Mapping, List
+                         when Mapping, List, Comment
                            document.nodes
                          else
                            raise "unreachable"
@@ -50,6 +50,8 @@ module StrictYAML
           start = nodes[index + 1]?
           raise "unexpected single directive" unless start
           raise "expected document start after directive" unless start.is_a? DocumentStart
+        elsif node.is_a? Comment
+          next
         else
           return node
         end
@@ -118,7 +120,9 @@ module StrictYAML
         DocumentStart.new token.pos
       when .document_end?
         DocumentEnd.new token.pos
-      when .comment?, .space?, .newline?
+      when .comment?
+        parse_comment token
+      when .space?, .newline?
         next_node
       when .directive?
         Directive.new token.pos, token.value
@@ -252,6 +256,8 @@ module StrictYAML
         end
 
         case inner.type
+        when .comment?
+          values << parse_comment inner
         when .space?, .newline?
           next
         when .list?
@@ -269,6 +275,32 @@ module StrictYAML
       end
 
       List.new join(token.pos, last.pos), values
+    end
+
+    private def parse_comment(token : Token) : Node
+      last = uninitialized Token
+      value = String.build do |io|
+        io << token.value
+
+        loop do
+          unless inner = next_token?
+            last = token
+            break
+          end
+
+          case inner.type
+          when .comment?
+            io << '\n' << inner.value
+          when .space?, .newline?
+            next
+          else
+            last = inner
+            break
+          end
+        end
+      end
+
+      Comment.new join(token.pos, last.pos), value
     end
   end
 end

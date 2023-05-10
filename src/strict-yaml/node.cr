@@ -109,7 +109,27 @@ module StrictYAML
     end
   end
 
-  class Directive < Node
+  class DocumentStart < Node
+    def self.empty
+      new Position.new(0, 0)
+    end
+
+    def to_object : Any::Type
+      nil
+    end
+  end
+
+  class DocumentEnd < Node
+    def self.empty
+      new Position.new(0, 0)
+    end
+
+    def to_object : Any::Type
+      nil
+    end
+  end
+
+  class Comment < Node
     property value : String
 
     def self.new(value : String)
@@ -124,19 +144,14 @@ module StrictYAML
     end
   end
 
-  class DocumentStart < Node
-    def self.empty
-      new Position.new(0, 0)
+  class Directive < Node
+    property value : String
+
+    def self.new(value : String)
+      new Position.new(0, 0), value
     end
 
-    def to_object : Any::Type
-      nil
-    end
-  end
-
-  class DocumentEnd < Node
-    def self.empty
-      new Position.new(0, 0)
+    def initialize(@pos : Position, @value : String)
     end
 
     def to_object : Any::Type
