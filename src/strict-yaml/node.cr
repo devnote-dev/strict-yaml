@@ -22,6 +22,10 @@ module StrictYAML
   class Scalar < Node
     property value : String
 
+    def self.new(value : String)
+      new Position.new(0, 0), value
+    end
+
     def self.parse(pos : Position, value : String)
       if quoted? value
         char = value[0]
@@ -52,6 +56,10 @@ module StrictYAML
   class Boolean < Node
     property value : Bool
 
+    def self.new(value : Bool)
+      new Position.new(0, 0), value
+    end
+
     def initialize(@pos : Position, @value : Bool)
     end
 
@@ -61,6 +69,10 @@ module StrictYAML
   end
 
   class Null < Node
+    def self.empty
+      new Position.new(0, 0)
+    end
+
     def to_object : Any::Type
       nil
     end
@@ -69,6 +81,10 @@ module StrictYAML
   class Mapping < Node
     property key : Node
     property value : Node
+
+    def self.new(key : Node, value : Node)
+      new Position.new(0, 0), key, value
+    end
 
     def initialize(@pos : Position, @key : Node, @value : Node)
     end
@@ -81,6 +97,10 @@ module StrictYAML
   class List < Node
     property values : Array(Node)
 
+    def self.new(values : Array(Node))
+      new Position.new(0, 0), values
+    end
+
     def initialize(@pos : Position, @values : Array(Node))
     end
 
@@ -92,6 +112,10 @@ module StrictYAML
   class Directive < Node
     property value : String
 
+    def self.new(value : String)
+      new Position.new(0, 0), value
+    end
+
     def initialize(@pos : Position, @value : String)
     end
 
@@ -101,12 +125,20 @@ module StrictYAML
   end
 
   class DocumentStart < Node
+    def self.empty
+      new Position.new(0, 0)
+    end
+
     def to_object : Any::Type
       nil
     end
   end
 
   class DocumentEnd < Node
+    def self.empty
+      new Position.new(0, 0)
+    end
+
     def to_object : Any::Type
       nil
     end
