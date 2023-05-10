@@ -64,6 +64,12 @@ module StrictYAML
     end
   end
 
+  class Null < Node
+    def object : Any::Type
+      nil
+    end
+  end
+
   class Mapping < Node
     property key : Node
     property value : Node
