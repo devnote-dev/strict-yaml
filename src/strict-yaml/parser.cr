@@ -1,9 +1,12 @@
 module StrictYAML
   class Parser
+    property? allow_faulty : Bool
+    @issues : Array(Issue)
     @tokens : Array(Token)
     @prev : Token?
 
-    def initialize(@tokens : Array(Token))
+    def initialize(@tokens : Array(Token), *, @allow_faulty : Bool = false)
+      @issues = [] of Issue
     end
 
     def parse_documents : Array(Document)
@@ -28,7 +31,7 @@ module StrictYAML
       docs.each do |document|
         root = find_root document.nodes
         unless document.nodes.all? { |n| n.class == root.class }
-          raise "mismatched root document types"
+          ::raise ParseError.new "mismatched root document types"
         end
 
         document.nodes = case root
@@ -41,6 +44,10 @@ module StrictYAML
                          end
       end
 
+      unless @issues.empty?
+        ::raise ParseError.new "YAML documents contained invalid syntax", @issues
+      end
+
       docs
     end
 
@@ -48,8 +55,8 @@ module StrictYAML
       nodes.each_with_index do |node, index|
         if node.is_a? Directive
           start = nodes[index + 1]?
-          raise "unexpected single directive" unless start
-          raise "expected document start after directive" unless start.is_a? DocumentStart
+          ::raise ParseError.new "unexpected single directive" unless start
+          ::raise ParseError.new "expected document start after directive" unless start.is_a? DocumentStart
         elsif node.is_a? Comment
           next
         else
@@ -57,7 +64,7 @@ module StrictYAML
         end
       end
 
-      raise "could not find the root type node"
+      ::raise ParseError.new "could not find the root type node"
     end
 
     private def parse(type : Scalar, nodes : Array(Node)) : Array(Node)
@@ -142,6 +149,11 @@ module StrictYAML
       @tokens.empty?
     end
 
+    private def raise(token : Token, message : String) : Nil
+      ::raise ParseError.new message unless @allow_faulty
+      @issues << Issue.new(message, token.pos)
+    end
+
     private def join(start : Position, stop : Position) : Position
       pos = start.dup
       pos.line_stop = stop.line_stop
@@ -159,8 +171,12 @@ module StrictYAML
         token = next_token
         next if token.type.comment?
         next if token.type.space? && allow_space
-        raise "expected token #{type}; got #{token.type}" unless token.type == type
-        return token
+
+        if token.type == type
+          return token
+        else
+          raise token, "expected token #{type}; got #{token.type}"
+        end
       end
     end
 
