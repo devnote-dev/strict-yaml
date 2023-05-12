@@ -29,7 +29,7 @@ module StrictYAML
       end
 
       docs.each do |document|
-        root = find_root document.nodes
+        root = find_root document.nodes.reject!(Comment)
         unless document.nodes.all? { |n| n.class == root.class }
           ::raise ParseError.new "mismatched root document types"
         end
@@ -131,7 +131,7 @@ module StrictYAML
       when .space?, .newline?
         next_node
       when .directive?
-        Directive.new token.pos, token.value
+        parse_directive token
       when .eof?
         nil
       end
@@ -169,13 +169,27 @@ module StrictYAML
     private def expect_next(type : Token::Type, *, allow_space : Bool = false) : Token
       loop do
         token = next_token
-        next if token.type.comment?
-        next if token.type.space? && allow_space
-
-        if token.type == type
-          return token
+        case token.type
+        when .comment?
+          next
+        when .eof?
+          ::raise ParseError.new "expected token #{type}; got End of File"
         else
-          raise token, "expected token #{type}; got #{token.type}"
+          if token.type == type
+            return token
+          elsif token.type.space? && allow_space
+            next
+          else
+            raise token, "expected token #{type}; got #{token.type}"
+            # return token
+
+            # TODO: requires more testing
+            dummy = Token.new 0, 0
+            dummy.pos = token.pos
+            dummy.value = " "
+
+            return dummy
+          end
         end
       end
     end
@@ -316,6 +330,21 @@ module StrictYAML
       end
 
       Comment.new join(token.pos, last.pos), value
+    end
+
+    private def parse_directive(token : Token) : Node
+      expect_next :newline, allow_space: true
+      expect_next :document_start, allow_space: true
+
+      case token.value
+      when .starts_with? "YAML "
+        version = token.value.split(' ', 2).last.strip
+        raise token, "invalid YAML version directive" unless version.in?("1.0", "1.1", "1.2")
+      when .starts_with? "TAG "
+        raise token, "TAG directives are not allowed"
+      end
+
+      Directive.new token.pos, token.value
     end
   end
 end

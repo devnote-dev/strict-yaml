@@ -22,7 +22,7 @@ module StrictYAML
 
     property type : Type
     property value : String
-    getter pos : Position
+    property pos : Position
 
     def initialize(line : Int32, column : Int32)
       @type = :eof
@@ -183,7 +183,7 @@ module StrictYAML
     end
 
     private def lex_directive : Nil
-      until current_char.in?('\0', '\r', '\n')
+      until current_char.in?('\0', '\r', '\n', '#')
         next_char
       end
 
