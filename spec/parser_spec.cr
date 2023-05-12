@@ -287,18 +287,20 @@ describe StrictYAML::Parser do
   end
 
   describe StrictYAML::Directive do
-    tokens = StrictYAML::Lexer.new(<<-YAML).run
-      %YAML 1.2
-      ---
-      foo: bar
-      ...
-      YAML
+    it "parses directives" do
+      tokens = StrictYAML::Lexer.new(<<-YAML).run
+        %YAML 1.2
+        ---
+        foo: bar
+        ...
+        YAML
 
-    nodes = StrictYAML::Parser.new(tokens).parse
+      nodes = StrictYAML::Parser.new(tokens).parse
 
-    nodes[0].should be_a StrictYAML::Directive
-    nodes[1].should be_a StrictYAML::DocumentStart
-    nodes[2].should be_a StrictYAML::Mapping
-    nodes[3].should be_a StrictYAML::DocumentEnd
+      nodes.size.should eq 3
+      nodes[0].should be_a StrictYAML::Directive
+      nodes[1].should be_a StrictYAML::Mapping
+      nodes[2].should be_a StrictYAML::DocumentEnd
+    end
   end
 end
