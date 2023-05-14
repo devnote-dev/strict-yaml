@@ -201,21 +201,17 @@ module StrictYAML
       last = uninitialized Token
 
       value = String.build do |io|
-        loop do
+        last = loop do
           inner = next_token
           case inner.type
-          when .eof?
-            last = inner
-            break
-          when .space?
-            if inner.value.size < indent
-              last = inner
-              break
-            else
-              io << inner.value.byte_slice indent
-            end
-          else
+          when .string?, .newline?
             io << inner.value
+          when .space?
+            break inner if inner.value.size < indent
+          when .comment?
+            next
+          else
+            break inner
           end
         end
       end
@@ -233,17 +229,15 @@ module StrictYAML
       last = uninitialized Token
 
       value = String.build do |io|
-        loop do
+        last = loop do
           inner = next_token
           case inner.type
-          when .eof?
-            last = inner
-            break
+          when .string?
+            io << inner.value
+          when .comment?
+            next
           when .space?
-            if inner.value.size < indent
-              last = inner
-              break
-            end
+            break inner if inner.value.size < indent
           when .newline?
             if inner.value.size > 1
               if token.type.fold_keep?
@@ -255,7 +249,7 @@ module StrictYAML
               io << ' '
             end
           else
-            io << inner.value
+            break inner
           end
         end
       end
