@@ -36,7 +36,7 @@ module StrictYAML
       when "true"  then Boolean.new pos, true
       when "false" then Boolean.new pos, false
       when "null"  then Null.new pos
-      else              new pos, value
+      else              new pos, value.strip(' ')
       end
     end
 
