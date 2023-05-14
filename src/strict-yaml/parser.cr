@@ -199,6 +199,7 @@ module StrictYAML
       space = expect_next :space
       indent = space.value.size
       last = uninitialized Token
+      comments = [] of Comment
 
       value = String.build do |io|
         last = loop do
@@ -209,7 +210,7 @@ module StrictYAML
           when .space?
             break inner if inner.value.size < indent
           when .comment?
-            next
+            comments << Comment.new token.pos, token.value
           else
             break inner
           end
@@ -219,7 +220,7 @@ module StrictYAML
       value = value.rstrip('\n') unless token.type.pipe_keep?
       value += "\n" if token.type.pipe?
 
-      Scalar.parse join(token.pos, last.pos), value
+      Scalar.parse join(token.pos, last.pos), value, comments
     end
 
     private def parse_folding_scalar(token : Token) : Node
@@ -227,6 +228,7 @@ module StrictYAML
       space = expect_next :space
       indent = space.value.size
       last = uninitialized Token
+      comments = [] of Comment
 
       value = String.build do |io|
         last = loop do
@@ -235,7 +237,7 @@ module StrictYAML
           when .string?
             io << inner.value
           when .comment?
-            next
+            comments << Comment.new inner.pos, inner.value
           when .space?
             break inner if inner.value.size < indent
           when .newline?
@@ -257,7 +259,7 @@ module StrictYAML
       value = value.rstrip unless token.type.fold_keep?
       value += "\n" if token.type.fold?
 
-      Scalar.parse join(token.pos, last.pos), value
+      Scalar.parse join(token.pos, last.pos), value, comments
     end
 
     private def parse_mapping(token : Token) : Node
@@ -269,6 +271,7 @@ module StrictYAML
 
     private def parse_list(token : Token) : Node
       values = [] of Node
+      comments = [] of Comment
       last = uninitialized Token
       @tokens.unshift token
 
@@ -280,7 +283,7 @@ module StrictYAML
 
         case inner.type
         when .comment?
-          values << parse_comment inner
+          comments << Comment.new inner.pos, inner.value
         when .space?, .newline?
           next
         when .list?
@@ -297,7 +300,7 @@ module StrictYAML
         end
       end
 
-      List.new join(token.pos, last.pos), values
+      List.new join(token.pos, last.pos), values, comments
     end
 
     private def parse_comment(token : Token) : Node

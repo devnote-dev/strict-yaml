@@ -12,8 +12,9 @@ module StrictYAML
 
   abstract class Node
     getter pos : Position
+    property comments : Array(Comment)
 
-    def initialize(@pos : Position)
+    def initialize(@pos : Position, @comments : Array(Comment) = [] of Comment)
     end
 
     abstract def to_object : Any::Type
@@ -26,17 +27,17 @@ module StrictYAML
       new Position.new(0, 0), value
     end
 
-    def self.parse(pos : Position, value : String)
+    def self.parse(pos : Position, value : String, comments : Array(Comment) = [] of Comment)
       if quoted? value
         char = value[0]
-        return new pos, value.strip(char)
+        return new pos, value.strip(char), comments
       end
 
       case value.downcase
-      when "true"  then Boolean.new pos, true
-      when "false" then Boolean.new pos, false
+      when "true"  then Boolean.new pos, true, comments
+      when "false" then Boolean.new pos, false, comments
       when "null"  then Null.new pos
-      else              new pos, value.strip(' ')
+      else              new pos, value.strip(' '), comments
       end
     end
 
@@ -45,7 +46,8 @@ module StrictYAML
         (str.starts_with?('\'') && str.ends_with?('\''))
     end
 
-    def initialize(@pos : Position, @value : String)
+    def initialize(pos : Position, @value : String, @comments : Array(Comment) = [] of Comment)
+      super pos
     end
 
     def to_object : Any::Type
@@ -60,7 +62,8 @@ module StrictYAML
       new Position.new(0, 0), value
     end
 
-    def initialize(@pos : Position, @value : Bool)
+    def initialize(pos : Position, @value : Bool, @comments : Array(Comment) = [] of Comment)
+      super pos
     end
 
     def to_object : Any::Type
@@ -71,6 +74,10 @@ module StrictYAML
   class Null < Node
     def self.empty
       new Position.new(0, 0)
+    end
+
+    def initialize(pos : Position, @comments : Array(Comment) = [] of Comment)
+      super pos
     end
 
     def to_object : Any::Type
@@ -86,7 +93,8 @@ module StrictYAML
       new Position.new(0, 0), key, value
     end
 
-    def initialize(@pos : Position, @key : Node, @value : Node)
+    def initialize(pos : Position, @key : Node, @value : Node)
+      super pos
     end
 
     def to_object : Any::Type
@@ -101,7 +109,8 @@ module StrictYAML
       new Position.new(0, 0), values
     end
 
-    def initialize(@pos : Position, @values : Array(Node))
+    def initialize(pos : Position, @values : Array(Node), comments : Array(Comment) = [] of Comment)
+      super pos, comments
     end
 
     def to_object : Any::Type
@@ -136,7 +145,8 @@ module StrictYAML
       new Position.new(0, 0), value
     end
 
-    def initialize(@pos : Position, @value : String)
+    def initialize(pos : Position, @value : String)
+      super pos
     end
 
     def to_object : Any::Type
@@ -151,7 +161,8 @@ module StrictYAML
       new Position.new(0, 0), value
     end
 
-    def initialize(@pos : Position, @value : String)
+    def initialize(pos : Position, @value : String)
+      super pos
     end
 
     def to_object : Any::Type

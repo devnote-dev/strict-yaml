@@ -303,4 +303,7 @@ describe StrictYAML::Parser do
       nodes[2].should be_a StrictYAML::DocumentEnd
     end
   end
+
+  # TODO:
+  # describe StrictYAML::Comment do
 end
