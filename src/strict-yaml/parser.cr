@@ -1,11 +1,11 @@
 module StrictYAML
   class Parser
-    property? allow_faulty : Bool
+    property? allow_invalid : Bool
     @issues : Array(Issue)
     @tokens : Array(Token)
     @prev : Token?
 
-    def initialize(@tokens : Array(Token), *, @allow_faulty : Bool = false)
+    def initialize(@tokens : Array(Token), *, @allow_invalid : Bool = false)
       @issues = [] of Issue
     end
 
@@ -150,7 +150,7 @@ module StrictYAML
     end
 
     private def raise(token : Token, message : String) : Nil
-      ::raise ParseError.new message unless @allow_faulty
+      ::raise ParseError.new message unless @allow_invalid
       @issues << Issue.new(message, token.pos)
     end
 
