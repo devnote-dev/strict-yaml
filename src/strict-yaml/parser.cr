@@ -109,9 +109,7 @@ module StrictYAML
         if next_token.type.colon?
           parse_mapping token
         else
-          if prev = @prev
-            @tokens.unshift prev
-          end
+          @tokens.unshift @prev.as(Token)
           Scalar.parse token.pos, token.value
         end
       when .colon?
