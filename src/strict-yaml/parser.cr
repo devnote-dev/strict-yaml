@@ -34,14 +34,9 @@ module StrictYAML
           ::raise ParseError.new "mismatched root document types"
         end
 
-        document.nodes = case root
-                         when Scalar, Boolean, Null
-                           parse root, document.nodes
-                         when Mapping, List, Comment
-                           document.nodes
-                         else
-                           raise "unreachable"
-                         end
+        if root.is_a?(Scalar | Boolean | Null)
+          document.nodes = parse root, document.nodes
+        end
       end
 
       unless @issues.empty?
