@@ -27,6 +27,10 @@ module StrictYAML
       new Position.new(0, 0), value
     end
 
+    def self.parse(value : String)
+      parse Position.new(0, 0), value
+    end
+
     def self.parse(pos : Position, value : String, comments : Array(Comment) = [] of Comment)
       if quoted? value
         char = value[0]
