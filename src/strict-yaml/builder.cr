@@ -95,12 +95,18 @@ module StrictYAML
       @nodes << List.new values
     end
 
+    def comment(text : String) : Nil
+      @nodes << Comment.new text
+    end
+
     def close : Nil
       return if @closed
 
-      @nodes.each do |node|
+      @nodes.each_with_index do |node, index|
         visit node
-        @io << '\n'
+        unless @nodes[index + 1]?.is_a? Comment
+          @io << '\n'
+        end
       end
 
       @closed = true
@@ -144,6 +150,10 @@ module StrictYAML
         visit value
         @io << '\n'
       end
+    end
+
+    private def visit(node : Comment) : Nil
+      @io << "  # " << node.value << '\n'
     end
 
     private def visit(node : Node) : Nil
