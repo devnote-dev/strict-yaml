@@ -37,8 +37,8 @@ module StrictYAML
 
     def mapping(key : K, value : V) : Nil forall K, V
       {% begin %}
-        {% if {String, Int, Float}.includes?(K) %}
-          key = Scalar.parse key
+        {% if K == String || K < Number::Primitive %}
+          key = Scalar.parse key.to_s
         {% elsif K == Bool %}
           key = Boolean.new key
         {% elsif K == Nil %}
@@ -47,8 +47,8 @@ module StrictYAML
           {% raise "unsupported YAML key type #{K}" %}
         {% end %}
 
-        {% if {String, Int, Float}.includes?(V) %}
-          value = Scalar.parse value
+        {% if V == String || V < Number::Primitive %}
+          value = Scalar.parse value.to_s
         {% elsif V == Bool %}
           value = Boolean.new value
         {% elsif V == Nil %}
@@ -63,8 +63,8 @@ module StrictYAML
 
     def mapping(key : K, & : ->) : Nil forall K
       {% begin %}
-        {% if {String, Int, Float}.includes?(K) %}
-          key = Scalar.parse key
+        {% if K == String || K < Number::Primitive %}
+          key = Scalar.parse key.to_s
         {% elsif K == Bool %}
           key = Boolean.new key
         {% elsif K == Nil %}
