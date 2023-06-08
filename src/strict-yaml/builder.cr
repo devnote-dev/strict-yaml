@@ -9,13 +9,16 @@ module StrictYAML
       @closed = false
     end
 
-    def document(& : ->) : Nil
-      document_start
+    def document(*, version : String? = nil, & : ->) : Nil
+      document_start version: version
       yield
       document_end
     end
 
-    def document_start : Nil
+    def document_start(*, version : String? = nil) : Nil
+      unless version.nil?
+        @nodes << Directive.new "YAML #{version}"
+      end
       @nodes << DocumentStart.empty
     end
 
@@ -154,6 +157,10 @@ module StrictYAML
 
     private def visit(node : Comment) : Nil
       @io << "  # " << node.value << '\n'
+    end
+
+    private def visit(node : Directive) : Nil
+      @io << '%' << node.value
     end
 
     private def visit(node : Node) : Nil
