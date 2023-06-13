@@ -4,10 +4,14 @@ module StrictYAML
 
     @nodes : Array(Node)
     @io : IO
+    @indent : Int32
+    @newline : Bool
     getter? closed : Bool
 
     def initialize(@io : IO)
       @nodes = [] of Node
+      @indent = 0
+      @newline = true
       @closed = false
     end
 
@@ -74,10 +78,9 @@ module StrictYAML
       return if @closed
 
       @nodes.each_with_index do |node, index|
+        @io << (" " * @indent) unless @indent.zero?
         visit node
-        unless @nodes[index + 1]?.is_a? Comment
-          @io << '\n'
-        end
+        @io << '\n' if @newline
       end
 
       @closed = true
@@ -120,23 +123,29 @@ module StrictYAML
     end
 
     private def visit(node : Map) : Nil
-      node.entries.each do |key, value|
+      last = node.entries.size - 1
+      node.entries.each_with_index do |(key, value), index|
+        @io << (" " * @indent) unless @indent.zero?
         visit key
         @io << ':'
 
         if value.is_a?(Map | List)
           @io << '\n'
+          @indent += 2
+          visit value
+          @indent -= 2
         else
           @io << ' '
+          visit value
         end
 
-        visit value
-        @io << '\n'
+        @io << '\n' unless index == last
       end
     end
 
     private def visit(node : List) : Nil
       node.values.each do |value|
+        @io << (" " * @indent) unless @indent.zero?
         @io << "- "
         visit value
         @io << '\n'
@@ -144,7 +153,7 @@ module StrictYAML
     end
 
     private def visit(node : Comment) : Nil
-      @io << "  # " << node.value << '\n'
+      @io << "  # " << node.value
     end
 
     private def visit(node : Directive) : Nil
