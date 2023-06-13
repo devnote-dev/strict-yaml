@@ -1,5 +1,7 @@
 module StrictYAML
   class Builder
+    alias Type = String | Bool | Nil | Array(Type) | Hash(Type, Type)
+
     @nodes : Array(Node)
     @io : IO
     getter? closed : Bool
@@ -26,66 +28,32 @@ module StrictYAML
       @nodes << DocumentEnd.empty
     end
 
-    def scalar(value : _) : Nil
-      @nodes << Scalar.new value.to_s
+    def scalar(value : Type) : Nil
+      case value
+      when String
+        @nodes << Scalar.new value
+      when Bool
+        @nodes << Boolean.new value
+      when Nil
+        @nodes << Null.empty
+      else
+        @nodes << Scalar.new value.to_s
+      end
     end
 
-    def boolean(value : Bool) : Nil
-      @nodes << Boolean.new value
+    def mapping(key : Type, value : Type) : Nil
+      @nodes << Map.from [Mapping.new(parse(key), parse(value))]
     end
 
-    def null : Nil
-      @nodes << Null.empty
-    end
-
-    def mapping(key : K, value : V) : Nil forall K, V
-      {% begin %}
-        {% if K == String || K < Number::Primitive %}
-          key = Scalar.parse key.to_s
-        {% elsif K == Bool %}
-          key = Boolean.new key
-        {% elsif K == Nil %}
-          key = Null.empty
-        {% else %}
-          {% raise "unsupported YAML key type #{K}" %}
-        {% end %}
-
-        {% if V == String || V < Number::Primitive %}
-          value = Scalar.parse value.to_s
-        {% elsif V == Bool %}
-          value = Boolean.new value
-        {% elsif V == Nil %}
-          value = Null.empty
-        {% else %} # TODO: handle array & hash types
-          {% raise "unsupported YAML value type #{V}" %}
-        {% end %}
-
-        @nodes << Mapping.new key, value
-      {% end %}
-    end
-
-    def mapping(key : K, & : ->) : Nil forall K
-      {% begin %}
-        {% if K == String || K < Number::Primitive %}
-          key = Scalar.parse key.to_s
-        {% elsif K == Bool %}
-          key = Boolean.new key
-        {% elsif K == Nil %}
-          key = Null.empty
-        {% else %}
-          {% raise "unsupported YAML key type #{K}" %}
-        {% end %}
-      {% end %}
-
+    def mapping(key : Type, & : ->) : Nil
       original = @nodes.dup
       @nodes.clear
       yield
-
       values = @nodes
       @nodes = original
       value = values.size > 1 ? List.new(values) : values[0]
 
-      @nodes << Mapping.new key, value
+      @nodes << Map.from [Mapping.new(parse(key), value)]
     end
 
     def list(& : ->) : Nil
@@ -116,6 +84,21 @@ module StrictYAML
       @io.flush
     end
 
+    private def parse(value : Type) : Node
+      case value
+      in String
+        Scalar.new value
+      in Bool
+        Boolean.new value
+      in Nil
+        Null.empty
+      in Hash
+        Map.from value.map { |k, v| Mapping.new parse(k), parse(v) }
+      in Array
+        List.new value.map { |v| parse(v) }
+      end
+    end
+
     private def visit(node : DocumentStart) : Nil
       @io << "---"
     end
@@ -136,15 +119,20 @@ module StrictYAML
       @io << "null"
     end
 
-    private def visit(node : Mapping) : Nil
-      visit node.key
-      @io << ':'
-      if node.value.is_a?(Mapping | List)
+    private def visit(node : Map) : Nil
+      node.entries.each do |key, value|
+        visit key
+        @io << ':'
+
+        if value.is_a?(Map | List)
+          @io << '\n'
+        else
+          @io << ' '
+        end
+
+        visit value
         @io << '\n'
-      else
-        @io << ' '
       end
-      visit node.value
     end
 
     private def visit(node : List) : Nil
