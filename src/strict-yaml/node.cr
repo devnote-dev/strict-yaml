@@ -89,28 +89,6 @@ module StrictYAML
     end
   end
 
-  class Map < Node
-    property entries : Hash(Node, Node)
-
-    def self.from(maps : Array(Mapping))
-      pos = maps[0].pos.dup
-      last = maps[-1].pos
-      pos.line_stop = last.line_stop
-      pos.column_stop = last.column_stop
-
-      hash = maps.reduce({} of Node => Node) { |acc, i| acc[i.key] = i.value; acc }
-      new pos, hash
-    end
-
-    def initialize(pos : Position, @entries : Hash(Node, Node))
-      super pos
-    end
-
-    def to_object : Any::Type
-      @hash
-    end
-  end
-
   class Mapping < Node
     property key : Node
     property value : Node

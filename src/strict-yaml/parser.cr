@@ -88,7 +88,7 @@ module StrictYAML
       loop do
         break unless node = next_node
         nodes << node
-        break if end?
+        break if @tokens.empty?
       end
 
       nodes
@@ -101,12 +101,7 @@ module StrictYAML
     private def parse_token(token : Token) : Node?
       case token.type
       when .string?
-        if next_token.type.colon?
-          parse_mapping token
-        else
-          @tokens.unshift @prev.as(Token)
-          Scalar.parse token.pos, token.value
-        end
+        parse_scalar_or_mapping token
       when .colon?
         parse_mapping token
       when .pipe?, .pipe_keep?, .pipe_strip?
@@ -138,8 +133,8 @@ module StrictYAML
       @prev = @tokens.shift?
     end
 
-    private def end? : Bool
-      @tokens.empty?
+    private def peek_token : Token
+      @tokens.first
     end
 
     private def raise(token : Token, message : String) : Nil
@@ -174,9 +169,7 @@ module StrictYAML
             next
           else
             raise token, "expected token #{type}; got #{token.type}"
-            # return token
 
-            # TODO: requires more testing
             dummy = Token.new 0, 0
             dummy.pos = token.pos
             dummy.value = " "
@@ -185,6 +178,45 @@ module StrictYAML
           end
         end
       end
+    end
+
+    private def parse_scalar_or_mapping(token : Token) : Node
+      if peek_token.type.colon?
+        next_token
+        case peek_token.type
+        when .space?, .newline?, .eof?
+          return parse_mapping token
+        else
+          @tokens.unshift @prev.as(Token)
+        end
+      end
+
+      last = uninitialized Token
+      value = String.build do |io|
+        io << token.value
+        last_is_space = token.value.ends_with? ' '
+
+        last = loop do
+          case (inner = next_token).type
+          when .string?
+            io << inner.value
+            last_is_space = inner.value.ends_with? ' '
+          when .colon?
+            io << ':'
+          when .list?
+            io << '-'
+          when .comment?
+            if last_is_space
+              break inner
+            end
+            io << '#' << inner.value
+          when .newline?, .eof?
+            break inner
+          end
+        end
+      end
+
+      Scalar.parse join(token.pos, last.pos), value
     end
 
     private def parse_pipe_scalar(token : Token) : Node
