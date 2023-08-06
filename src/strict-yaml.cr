@@ -10,18 +10,18 @@ module StrictYAML
   def self.parse_all(source : String) : Array(Any)
     parse_documents(source).map(&.nodes).map do |nodes|
       case nodes[0]
-      when Mapping
-        hash = nodes.map(&.to_object).reduce({} of Any => Any) do |acc, i|
-          acc.merge i.as(Hash(Any, Any))
-        end
-
-        Any.new hash
       when List
         arr = nodes.map(&.to_object).reduce([] of Any) do |acc, i|
           acc + i.as(Array(Any))
         end
 
         Any.new arr
+      when Mapping
+        hash = nodes.map(&.to_object).reduce({} of Any => Any) do |acc, i|
+          acc.merge i.as(Hash(Any, Any))
+        end
+
+        Any.new hash
       else
         Any.new nodes[0].to_object
       end
@@ -34,6 +34,9 @@ module StrictYAML
 
   def self.parse_documents(source : String) : Array(Document)
     tokens = Lexer.new(source).run
-    Parser.new(tokens).parse_documents
+    ast = Parser.new(tokens).parse
+    ast.raise if ast.issues?
+
+    ast.parse_documents
   end
 end

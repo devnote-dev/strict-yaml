@@ -9,80 +9,7 @@ module StrictYAML
       @issues = [] of Issue
     end
 
-    def parse_documents : Array(Document)
-      docs = [] of Document
-      nodes = [] of Node
-
-      parse.each do |node|
-        if node.is_a? DocumentStart
-          nodes.clear
-        elsif node.is_a? DocumentEnd
-          docs << Document.new nodes.dup
-          nodes.clear
-        else
-          nodes << node
-        end
-      end
-
-      unless nodes.empty?
-        docs << Document.new nodes
-      end
-
-      docs.each do |document|
-        root = find_root document.nodes.reject!(Comment)
-        unless document.nodes.all? { |n| n.class == root.class }
-          ::raise ParseError.new "mismatched root document types"
-        end
-
-        if root.is_a?(Scalar | Boolean | Null)
-          document.nodes = parse root, document.nodes
-        end
-      end
-
-      unless @issues.empty?
-        ::raise ParseError.new "YAML documents contained invalid syntax", @issues
-      end
-
-      docs
-    end
-
-    private def find_root(nodes : Array(Node)) : Node
-      nodes.each_with_index do |node, index|
-        if node.is_a? Directive
-          start = nodes[index + 1]?
-          ::raise ParseError.new "unexpected single directive" unless start
-          ::raise ParseError.new "expected document start after directive" unless start.is_a? DocumentStart
-        elsif node.is_a? Comment
-          next
-        else
-          return node
-        end
-      end
-
-      ::raise ParseError.new "could not find the root type node"
-    end
-
-    private def parse(type : Scalar, nodes : Array(Node)) : Array(Node)
-      [Scalar.new(join(nodes.first.pos, nodes.last.pos), nodes.map(&.as(Scalar).value).join(' '))] of Node
-    end
-
-    private def parse(type : Boolean, nodes : Array(Node)) : Array(Node)
-      if nodes.size == 1
-        [nodes[0]] of Node
-      else
-        [Scalar.new(join(nodes.first.pos, nodes.last.pos), nodes.map(&.as(Boolean).value.to_s).join(' '))] of Node
-      end
-    end
-
-    private def parse(type : Null, nodes : Array(Node)) : Array(Node)
-      if nodes.size == 1
-        [nodes[0]] of Node
-      else
-        [Scalar.new(join(nodes.first.pos, nodes.last.pos), ("null " * nodes.size).chomp)] of Node
-      end
-    end
-
-    def parse : Array(Node)
+    def parse : SyntaxTree
       nodes = [] of Node
 
       loop do
@@ -91,7 +18,7 @@ module StrictYAML
         break if @tokens.empty?
       end
 
-      nodes
+      SyntaxTree.new nodes, @issues
     end
 
     private def next_node : Node?
