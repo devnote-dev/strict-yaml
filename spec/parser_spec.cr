@@ -111,6 +111,15 @@ describe StrictYAML::Parser do
       nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces"
     end
 
+    it "parses scalars with special tokens" do
+      tokens = StrictYAML::Lexer.new("foo:bar#baz%qux").run
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes.size.should eq 1
+      nodes[0].should be_a StrictYAML::Scalar
+      nodes[0].as(StrictYAML::Scalar).value.should eq "foo:bar#baz%qux"
+    end
+
     it "parses the crystal type object" do
       tokens = StrictYAML::Lexer.new("foo bar baz").run
       nodes = StrictYAML::Parser.new(tokens).parse
@@ -193,13 +202,31 @@ describe StrictYAML::Parser do
       nodes[0].as(StrictYAML::Mapping).value.should be_a StrictYAML::Scalar
     end
 
-    it "parses nested mappings" do
+    it "parses nested newline mappings" do
       tokens = StrictYAML::Lexer.new(<<-YAML).run
         foo:
           bar:
             baz:
         YAML
 
+      nodes = StrictYAML::Parser.new(tokens).parse
+
+      nodes[0].should be_a StrictYAML::Mapping
+      nodes[0].as(StrictYAML::Mapping).key.should be_a StrictYAML::Scalar
+      nodes[0].as(StrictYAML::Mapping).value.should be_a StrictYAML::Mapping
+
+      nodes[0]
+        .as(StrictYAML::Mapping).value
+        .as(StrictYAML::Mapping).value.should be_a StrictYAML::Mapping
+
+      nodes[0]
+        .as(StrictYAML::Mapping).value
+        .as(StrictYAML::Mapping).value
+        .as(StrictYAML::Mapping).value.should be_a StrictYAML::Null
+    end
+
+    it "parses nested inline mappings" do
+      tokens = StrictYAML::Lexer.new("foo: bar: baz:").run
       nodes = StrictYAML::Parser.new(tokens).parse
 
       nodes[0].should be_a StrictYAML::Mapping
