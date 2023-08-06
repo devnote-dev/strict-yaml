@@ -1,3 +1,5 @@
+require "string_pool"
+
 module StrictYAML
   class Token
     enum Type
@@ -21,23 +23,30 @@ module StrictYAML
     end
 
     property type : Type
-    property value : String
     property pos : Position
+    @value : String?
 
     def initialize(line : Int32, column : Int32)
       @type = :eof
-      @value = ""
       @pos = Position.new line, column
+    end
+
+    def value : String
+      @value.as(String)
+    end
+
+    def value=(@value)
     end
   end
 
   class Lexer
-    getter source : String
+    @pool : StringPool
     @reader : Char::Reader
     @line : Int32
     @token : Token
 
-    def initialize(@source : String)
+    def initialize(source : String)
+      @pool = StringPool.new
       @reader = Char::Reader.new source
       @line = 0
       @token = uninitialized Token
@@ -123,7 +132,11 @@ module StrictYAML
       @token.pos.column_stop = @reader.pos
 
       if with_value
-        @token.value = @source[@token.pos.column_start...@token.pos.column_stop]
+        slice = Slice.new(
+          @reader.string.to_unsafe + @token.pos.column_start,
+          @token.pos.column_stop - @token.pos.column_start
+        )
+        @token.value = @pool.get slice
       end
     end
 
