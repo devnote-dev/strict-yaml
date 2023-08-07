@@ -7,15 +7,13 @@ module StrictYAML
     end
 
     @io : IO
-    @level : Int32
     @indent : Int32
     @newline : Bool
-    @state : State
+    getter state : State
     getter? closed : Bool
 
     def initialize(@io : IO)
-      @level = 0
-      @indent = 0
+      @indent = -2
       @newline = false
       @state = :none
       @closed = false
@@ -65,13 +63,12 @@ module StrictYAML
 
     def list(& : ->) : Nil
       check_state
-      @level += 1
+      @io << "- "
       @indent += 2
       @state |= State::ListStart
 
       yield
 
-      @level -= 1
       @indent -= 2
       @state &= ~State::ListBlock
     end
@@ -98,13 +95,14 @@ module StrictYAML
         @newline = false
       end
 
-      if @level > 0
-        @io << (" " * @indent) if @level > 2 && @state.list_block?
-        if @state.list_start?
-          @state &= ~State::ListStart
-          @state |= State::ListBlock
-        end
-        @io << "- " * @level && @state.list_block?
+      if @state.list_block?
+        @io << (" " * @indent) if @indent > 0 && !@state.list_start?
+        @io << "- " unless @state.list_start?
+      end
+
+      if @state.list_start?
+        @state &= ~State::ListStart
+        @state |= State::ListBlock
       end
     end
   end
