@@ -1,4 +1,7 @@
 module StrictYAML
+  annotation Field
+  end
+
   module Serializable
     macro included
       def self.new(value : StrictYAML::Any)
@@ -6,8 +9,12 @@ module StrictYAML
           raise "serialization only supported for mappings"
         end
 
+        new value.as_h
+      end
+
+      def self.new(value : Hash(StrictYAML::Any, StrictYAML::Any))
         instance = allocate
-        instance.initialize(__strict_yaml_data: value.as_h)
+        instance.initialize(__strict_yaml_data: value)
         GC.add_finalizer(instance) if instance.responds_to?(:finalize)
 
         instance
@@ -24,21 +31,25 @@ module StrictYAML
       {% begin %}
         {% props = {} of Nil => Nil %}
         {% for ivar in @type.instance_vars %}
-          {% props[ivar.id] = {
-               key:         ivar.id.stringify,
-               type:        ivar.type,
-               has_default: ivar.has_default_value?,
-               default:     ivar.default_value,
-             } %}
-          %var{ivar.id} = uninitialized {{ ivar.type }}
-          %found{ivar.id} = false
+          {% anno = ivar.annotation(StrictYAML::Field) %}
+          {% unless anno && (anno[:ignore] || anno[:ignore_deserialize]) %}
+            {% props[ivar.id] = {
+                 key:         ((anno && anno[:key]) || ivar).id.stringify,
+                 type:        ivar.type,
+                 has_default: ivar.has_default_value? || ivar.type.nilable?,
+                 default:     ivar.default_value,
+                 converter:   anno && anno[:converter],
+               } %}
+            %var{ivar.id} = uninitialized {{ ivar.type }}
+            %found{ivar.id} = false
+          {% end %}
         {% end %}
 
         data.each do |key, value|
           case key.as_s
           {% for name, prop in props %}
             when {{ prop[:key] }}
-              %var{name} = {{ prop[:type] }}.from_yaml value
+              %var{name} = {{ prop[:converter] || prop[:type] }}.from_yaml value
               %found{name} = true
           {% end %}
           else
@@ -51,7 +62,7 @@ module StrictYAML
             {% if prop[:has_default] %}
               %var{name} = {{ prop[:default] }}
             {% else %}
-              raise "missing YAML attribute: {{ name }}"
+              raise "missing YAML attribute: {{ prop[:key].id }}"
             {% end %}
           end
         {% end %}
