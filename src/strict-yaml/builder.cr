@@ -84,13 +84,13 @@ module StrictYAML
 
     def mapping(key : _, value : _) : Nil
       check_state
-      @io << key << ": " << value
+      @io << quote(key) << ": " << value
       @newline = true
     end
 
     def mapping(kind : Kind, key : _, & : ->) : Nil
       check_state
-      @io << key << ":\n"
+      @io << quote(key) << ":\n"
       if kind.list?
         list { yield }
       else
@@ -141,6 +141,19 @@ module StrictYAML
       if @state.list_start?
         @state &= ~State::ListStart
         @state |= State::ListBlock
+      end
+    end
+
+    private def quote(value) : String
+      case value
+      when Number, String, Bool, Char, Path, Symbol
+        value
+      else
+        str = value.to_s
+        if str.includes? ' '
+          str = "'" + str + "'"
+        end
+        str
       end
     end
   end
