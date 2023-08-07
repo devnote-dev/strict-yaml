@@ -4,15 +4,24 @@ module StrictYAML
     enum State
       ListStart
       ListBlock
+      MappingStart
+      MappingBlock
+    end
+
+    enum Kind
+      List
+      Map
     end
 
     @io : IO
+    @level : Int32
     @indent : Int32
     @newline : Bool
     getter state : State
     getter? closed : Bool
 
     def initialize(@io : IO)
+      @level = 0
       @indent = -2
       @newline = false
       @state = :none
@@ -73,7 +82,27 @@ module StrictYAML
       @state &= ~State::ListBlock
     end
 
-    def mapping : Nil
+    def mapping(key : _, value : _) : Nil
+      check_state
+      @io << key << ": " << value
+      @newline = true
+    end
+
+    def mapping(kind : Kind, key : _, & : ->) : Nil
+      check_state
+      @io << key << ":\n"
+      if kind.list?
+        list { yield }
+      else
+        @io << "  "
+        @level += 2
+        @state |= State::MappingStart
+
+        yield
+
+        @level -= 2
+        @state &= ~State::MappingStart
+      end
     end
 
     def comment(text : String) : Nil
@@ -93,6 +122,15 @@ module StrictYAML
       if @newline
         @io << '\n'
         @newline = false
+      end
+
+      if @state.mapping_block?
+        @io << (" " * @level) unless @state.mapping_start? || @state.list_start?
+      end
+
+      if @state.mapping_start?
+        @state &= ~State::MappingStart
+        @state |= State::MappingBlock
       end
 
       if @state.list_block?
