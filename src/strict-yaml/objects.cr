@@ -6,11 +6,26 @@ class Object
   def self.from_yaml(value : StrictYAML::Any)
     new value
   end
+
+  def to_yaml : String
+    String.build do |io|
+      to_yaml io
+    end
+  end
+
+  def to_yaml(io : IO) : Nil
+    builder = StrictYAML::Builder.new io
+    to_yaml builder
+  end
 end
 
 struct Nil
   def self.new(value : StrictYAML::Any)
     nil
+  end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.null
   end
 end
 
@@ -18,6 +33,10 @@ end
   struct Int{{ base.id }}
     def self.new(value : StrictYAML::Any)
       value.to_i{{ base.id }}
+    end
+
+    def to_yaml(yaml : StrictYAML::Builder) : Nil
+      yaml.scalar self
     end
   end
 {% end %}
@@ -27,6 +46,10 @@ end
     def self.new(value : StrictYAML::Any)
       value.to_f{{ base.id }}
     end
+
+    def to_yaml(yaml : StrictYAML::Builder) : Nil
+      yaml.scalar self
+    end
   end
 {% end %}
 
@@ -34,11 +57,19 @@ class String
   def self.new(value : StrictYAML::Any)
     value.as_s
   end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.scalar self
+  end
 end
 
 struct Bool
   def self.new(value : StrictYAML::Any)
     value.as_bool
+  end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.boolean self
   end
 end
 
@@ -48,11 +79,19 @@ struct Char
     raise "invalid character sequence" unless chars.size == 1
     chars[0]
   end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.scalar self
+  end
 end
 
 struct Path
   def self.new(value : StrictYAML::Any)
     new value.as_s
+  end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.scalar self
   end
 end
 
@@ -64,6 +103,12 @@ class Array(T)
     end
     arr
   end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.list do
+      each &.to_yaml yaml
+    end
+  end
 end
 
 class Deque(T)
@@ -74,6 +119,12 @@ class Deque(T)
     end
     deq
   end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.list do
+      each &.to_yaml yaml
+    end
+  end
 end
 
 struct Set(T)
@@ -83,6 +134,12 @@ struct Set(T)
       set << T.new child
     end
     set
+  end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.list do
+      each &.to_yaml yaml
+    end
   end
 end
 
@@ -97,6 +154,12 @@ struct Tuple(*T)
       )
     {% end %}
   end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.list do
+      each &.to_yaml yaml
+    end
+  end
 end
 
 class Hash(K, V)
@@ -106,6 +169,12 @@ class Hash(K, V)
       hash[K.new(k)] = V.new(v)
     end
     hash
+  end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    each do |key, value|
+      yaml.mapping key, value
+    end
   end
 end
 
@@ -146,6 +215,12 @@ struct NamedTuple
       )
     {% end %}
   end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    each do |key, value|
+      yaml.mapping key, value
+    end
+  end
 end
 
 struct Enum
@@ -166,6 +241,10 @@ struct Enum
     {% else %}
       parse?(value.as_s) || raise "unknown enum #{self} value: #{value.as_s.inspect}"
     {% end %}
+  end
+
+  def to_yaml(yaml : StrictYAML::Builder) : Nil
+    yaml.scalar value
   end
 end
 
