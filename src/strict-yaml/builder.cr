@@ -84,8 +84,27 @@ module StrictYAML
 
     def mapping(key : _, value : _) : Nil
       check_state
-      @io << quote(key) << ": " << value
-      @newline = true
+      @io << quote(key) << ':'
+
+      case value
+      when Number, String, Bool, Char, Path, Symbol
+        @io << ' ' << scalar value
+        @newline = true
+      when Hash, NamedTuple
+        @io << "\n  "
+        @level += 2 if @level >= 2
+        @state |= State::MappingStart
+
+        value.each do |k, v|
+          mapping k, v
+        end
+
+        @level -= 2 if @level >= 4
+        @state &= ~State::MappingStart
+      else
+        @io << '\n'
+        list value
+      end
     end
 
     def mapping(kind : Kind, key : _, & : ->) : Nil
@@ -130,7 +149,11 @@ module StrictYAML
 
       if @state.mapping_start?
         @state &= ~State::MappingStart
+        # if @state.mapping_block?
+        #   @io << (" " * (@level - 2))
+        # else
         @state |= State::MappingBlock
+        # end
       end
 
       if @state.list_block?
@@ -147,7 +170,7 @@ module StrictYAML
     private def quote(value) : String
       case value
       when Number, String, Bool, Char, Path, Symbol
-        value
+        value.to_s
       else
         str = value.to_s
         if str.includes? ' '
