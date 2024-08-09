@@ -11,7 +11,7 @@ module StrictYAML
     end
 
     def raise : NoReturn
-      ::raise ParseError.new "YAML documents contained invalid syntax", @issues
+      ::raise Error.new "YAML documents contained invalid syntax", Location[0, 0]
     end
 
     def parse_documents : Array(Document)
