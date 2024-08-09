@@ -1,9 +1,12 @@
 module StrictYAML
   class Error < Exception
-    getter message : String
     getter loc : Location
 
     def initialize(@message : String, @loc : Location)
+    end
+
+    def message : String
+      super.as(String)
     end
   end
 
@@ -18,6 +21,7 @@ module StrictYAML
     end
 
     private def initialize(@tokens : Array(Token), @allow_invalid : Bool)
+      @pos = 0
       @errors = [] of Error
     end
 
