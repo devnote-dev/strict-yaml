@@ -111,7 +111,7 @@ module StrictYAML
         when .space?, .newline?, .eof?
           return parse_mapping token
         else
-          @tokens.unshift @prev.as(Token)
+          @pos -= 1
         end
       end
 
@@ -130,9 +130,7 @@ module StrictYAML
           when .list?
             io << '-'
           when .comment?
-            if last_is_space
-              break inner
-            end
+            break inner if last_is_space
             io << '#' << inner.value
           when .newline?, .eof?
             break inner
@@ -219,7 +217,8 @@ module StrictYAML
     private def parse_list(token : Token) : Node
       values = [] of Node
       comments = [] of Comment
-      @tokens.unshift token
+      pp! token
+      @pos -= 1
 
       last = loop do
         break token unless inner = next_token?
@@ -237,7 +236,7 @@ module StrictYAML
         when .space?, .newline?
           next
         else
-          @tokens.unshift @prev.as(Token)
+          @pos -= 1
           break inner
         end
       end
