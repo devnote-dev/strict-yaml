@@ -87,7 +87,7 @@ module StrictYAML
     private def expect_next(kind : Token::Kind, *, allow_space : Bool = false) : Token
       case (token = next_token).kind
       when .eof?
-        ::raise Error.new "Expected token #{type}; got End of File", token.loc
+        ::raise Error.new "Expected token #{kind}; got End of File", token.loc
       when .comment?
         expect_next kind, allow_space: allow_space
       else
@@ -227,9 +227,9 @@ module StrictYAML
       last = loop do
         break token unless inner = next_token?
 
-        case inner.type
+        case inner.kind
         when .list?
-          if node = parse_token next_token
+          if node = parse_next_node
             values << node
           else
             values << Null.new inner.loc
@@ -259,7 +259,7 @@ module StrictYAML
             break
           end
 
-          case inner.type
+          case inner.kind
           when .comment?
             io << '\n' << inner.value
           when .space?, .newline?
