@@ -157,7 +157,27 @@ module StrictYAML
 
     private def parse_mapping(token : Token) : Node
       key = Scalar.new token.loc, token.value
-      value = parse_next_node || Null.new token.loc
+
+      # TODO: consider adding a #padding field to account for space/comment after colon
+      value = uninitialized Node
+      loop do
+        case (inner = next_token).kind
+        when .space?
+          next
+        when .newline?
+          if peek_token.kind.space?
+            next
+          else
+            value = Null.new inner.loc
+            break
+          end
+        when .comment?
+          key.comments << Comment.new inner.loc, inner.value
+        else
+          value = parse_next_node || Null.new token.loc
+          break
+        end
+      end
 
       Mapping.new(token.loc & value.loc, key, value)
     end
