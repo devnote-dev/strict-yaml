@@ -3,8 +3,8 @@ require "./spec_helper"
 describe StrictYAML::Parser do
   describe StrictYAML::Scalar do
     it "parses raw strings" do
-      tokens = StrictYAML::Lexer.new("foo bar baz").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "foo bar baz"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes.size.should eq 1
       nodes[0].should be_a StrictYAML::Scalar
@@ -12,7 +12,7 @@ describe StrictYAML::Parser do
     end
 
     it "parses multi-line strings" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         foo
 
         bar
@@ -20,7 +20,7 @@ describe StrictYAML::Parser do
         baz
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes.size.should eq 3
       nodes[0].should be_a StrictYAML::Scalar
@@ -30,20 +30,20 @@ describe StrictYAML::Parser do
     end
 
     it "parses pipe scalars" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         |
           a scaling pipe string
           wrapped with newlines
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a scaling pipe string\nwrapped with newlines\n"
     end
 
     it "parses pipe keep scalars" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         |+
           a scaling pipe string
           wrapped with newlines
@@ -51,40 +51,40 @@ describe StrictYAML::Parser do
 
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a scaling pipe string\nwrapped with newlines\n\n"
     end
 
     it "parses pipe strip scalars" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         |-
           a scaling pipe string
           wrapped with newlines
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a scaling pipe string\nwrapped with newlines"
     end
 
     it "parses folding scalars" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         >
           a folding string
           wrapped with spaces
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces\n"
     end
 
     it "parses folding keep scalars" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         >+
           a folding string
           wrapped with spaces
@@ -92,28 +92,28 @@ describe StrictYAML::Parser do
 
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces\n\n"
     end
 
     it "parses folding strip scalars" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         >-
           a folding string
           wrapped with spaces
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Scalar
       nodes[0].as(StrictYAML::Scalar).value.should eq "a folding string wrapped with spaces"
     end
 
     it "parses scalars with special tokens" do
-      tokens = StrictYAML::Lexer.new("foo:bar#baz%qux").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "foo:bar#baz%qux"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes.size.should eq 1
       nodes[0].should be_a StrictYAML::Scalar
@@ -121,8 +121,8 @@ describe StrictYAML::Parser do
     end
 
     it "parses the crystal type object" do
-      tokens = StrictYAML::Lexer.new("foo bar baz").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "foo bar baz"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].to_object.should be_a String
       nodes[0].to_object.should eq "foo bar baz"
@@ -131,12 +131,12 @@ describe StrictYAML::Parser do
 
   describe StrictYAML::List do
     it "parses raw lists" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         - foo
         - bar
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::List
       nodes[0].as(StrictYAML::List).values.size.should eq 2
@@ -144,13 +144,13 @@ describe StrictYAML::Parser do
     end
 
     it "parses nested lists" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         - foo
         - - bar
           - - baz
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::List
       nodes[0].as(StrictYAML::List).values.size.should eq 2
@@ -181,12 +181,12 @@ describe StrictYAML::Parser do
     end
 
     it "parses the crystal type object" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         - foo
         - bar
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].to_object.should be_a Array(StrictYAML::Any)
     end
@@ -194,8 +194,8 @@ describe StrictYAML::Parser do
 
   describe StrictYAML::Mapping do
     it "parses mappings" do
-      tokens = StrictYAML::Lexer.new("foo: bar").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "foo: bar"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Mapping
       nodes[0].as(StrictYAML::Mapping).key.should be_a StrictYAML::Scalar
@@ -203,13 +203,13 @@ describe StrictYAML::Parser do
     end
 
     it "parses nested newline mappings" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         foo:
           bar:
             baz:
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Mapping
       nodes[0].as(StrictYAML::Mapping).key.should be_a StrictYAML::Scalar
@@ -226,8 +226,8 @@ describe StrictYAML::Parser do
     end
 
     it "parses nested inline mappings" do
-      tokens = StrictYAML::Lexer.new("foo: bar: baz:").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "foo: bar: baz:"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Mapping
       nodes[0].as(StrictYAML::Mapping).key.should be_a StrictYAML::Scalar
@@ -244,8 +244,8 @@ describe StrictYAML::Parser do
     end
 
     it "parses the crystal type object" do
-      tokens = StrictYAML::Lexer.new("foo: bar").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "foo: bar"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].to_object.should be_a Hash(StrictYAML::Any, StrictYAML::Any)
     end
@@ -253,15 +253,15 @@ describe StrictYAML::Parser do
 
   describe StrictYAML::Null do
     it "parses null value" do
-      tokens = StrictYAML::Lexer.new("null").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "null"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Null
     end
 
     it "parses the crystal type object" do
-      tokens = StrictYAML::Lexer.new("null").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "null"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].to_object.should be_nil
     end
@@ -269,44 +269,44 @@ describe StrictYAML::Parser do
 
   describe StrictYAML::Boolean do
     it "parses true values" do
-      tokens = StrictYAML::Lexer.new("true").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "true"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Boolean
       nodes[0].as(StrictYAML::Boolean).value.should be_true
 
-      tokens = StrictYAML::Lexer.new("tRUE").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "tRUE"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Boolean
       nodes[0].as(StrictYAML::Boolean).value.should be_true
     end
 
     it "parses false values" do
-      tokens = StrictYAML::Lexer.new("false").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "false"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Boolean
       nodes[0].as(StrictYAML::Boolean).value.should be_false
 
-      tokens = StrictYAML::Lexer.new("FaLsE").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "FaLsE"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].should be_a StrictYAML::Boolean
       nodes[0].as(StrictYAML::Boolean).value.should be_false
     end
 
     it "parses the crystal type object" do
-      tokens = StrictYAML::Lexer.new("true").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "true"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].to_object.should be_a Bool
       nodes[0].to_object.should be_true
     end
 
     it "parses the crystal type object" do
-      tokens = StrictYAML::Lexer.new("false").run
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      tokens = StrictYAML::Lexer.run "false"
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes[0].to_object.should be_a Bool
       nodes[0].to_object.should be_false
@@ -315,14 +315,14 @@ describe StrictYAML::Parser do
 
   describe StrictYAML::Directive do
     it "parses directives" do
-      tokens = StrictYAML::Lexer.new(<<-YAML).run
+      tokens = StrictYAML::Lexer.run <<-YAML
         %YAML 1.2
         ---
         foo: bar
         ...
         YAML
 
-      nodes = StrictYAML::Parser.new(tokens).parse.nodes
+      nodes = StrictYAML::Parser.parse(tokens).nodes
 
       nodes.size.should eq 3
       nodes[0].should be_a StrictYAML::Directive
