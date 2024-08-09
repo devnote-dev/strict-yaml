@@ -142,11 +142,11 @@ module StrictYAML
         end
       end
 
-      Scalar.parse(token.loc & last.loc, value)
+      Scalar.new(token.loc & last.loc, value)
     end
 
     private def parse_mapping(token : Token) : Node
-      key = Scalar.parse token.loc, token.value
+      key = Scalar.new token.loc, token.value
       value = parse_next_node || Null.new token.loc
 
       Mapping.new(token.loc & value.loc, key, value)
@@ -177,7 +177,7 @@ module StrictYAML
       value = value.rstrip('\n') unless token.kind.pipe_keep?
       value += "\n" if token.kind.pipe?
 
-      Scalar.parse(token.loc & last.loc, value, comments)
+      Scalar.new(token.loc & last.loc, value, comments)
     end
 
     private def parse_folding_scalar(token : Token) : Node
@@ -215,7 +215,7 @@ module StrictYAML
       value = value.rstrip unless token.kind.fold_keep?
       value += "\n" if token.kind.fold?
 
-      Scalar.parse(token.loc & last.loc, value, comments)
+      Scalar.new(token.loc & last.loc, value, comments)
     end
 
     private def parse_list(token : Token) : Node
