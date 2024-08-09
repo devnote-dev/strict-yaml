@@ -10,6 +10,30 @@ module StrictYAML
     end
   end
 
+  class Location
+    @value : StaticArray(Int32, 4)
+
+    def self.[](line : Int32, column : Int32)
+      new StaticArray[line, column, 0, 0]
+    end
+
+    def initialize(@value : StaticArray(Int32, 4))
+    end
+
+    def start : {Int32, Int32}
+      {@value[0], @value[1]}
+    end
+
+    def end : {Int32, Int32}
+      {@value[2], @value[3]}
+    end
+
+    def end_at(line : Int32, column : Int32)
+      @value[2] = line
+      @value[3] = column
+    end
+  end
+
   abstract class Node
     getter pos : Position
     property comments : Array(Comment)

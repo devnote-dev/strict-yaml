@@ -2,7 +2,10 @@ require "string_pool"
 
 module StrictYAML
   class Token
-    enum Type
+    enum Kind
+      EOF
+      Space
+      Newline
       String
       Colon
       Pipe
@@ -16,19 +19,13 @@ module StrictYAML
       DocumentEnd
       Comment
       Directive
-
-      Space
-      Newline
-      EOF
     end
 
-    property type : Type
-    property pos : Position
+    property kind : Kind
+    property loc : Location
     @value : String?
 
-    def initialize(line : Int32, column : Int32)
-      @type = :eof
-      @pos = Position.new line, column
+    def initialize(@kind : Kind, @loc : Location, @value : String? = nil)
     end
 
     def value : String
@@ -43,78 +40,77 @@ module StrictYAML
     @pool : StringPool
     @reader : Char::Reader
     @line : Int32
-    @token : Token
+    @column : Int32
+    @loc : Location
 
-    def initialize(source : String)
-      @pool = StringPool.new
-      @reader = Char::Reader.new source
-      @line = 0
-      @token = uninitialized Token
+    def self.run(source : String) : Array(Token)
+      new(source).run
     end
 
+    private def initialize(source : String)
+      @pool = StringPool.new
+      @reader = Char::Reader.new source
+      @line = @column = 0
+      @loc = Location[0, 0]
+    end
+
+    # :nodoc:
     def run : Array(Token)
       tokens = [] of Token
 
       loop do
-        next_token
-        tokens << @token
-        break if @token.type.eof?
+        token = lex_next_token
+        tokens << token
+        break if token.type.eof?
       end
 
       tokens
     end
 
-    private def next_token : Nil
-      @token = Token.new @line, @reader.pos
-
+    private def lex_next_token : Token
       case current_char
       when '\0'
-        finalize_token false
+        Token.new :eof, location
       when ' '
         lex_space
       when '\r', '\n'
         lex_newline
       when ':'
         next_char
-        @token.type = :colon
-        finalize_token true
+        Token.new :colon, location
       when '|'
         case next_char
         when '+'
           next_char
-          @token.type = :pipe_keep
+          Token.new :pipe_keep, location
         when '-'
           next_char
-          @token.type = :pipe_strip
+          Token.new :pipe_strip, location
         else
-          @token.type = :pipe
+          Token.new :pipe, location
         end
-        finalize_token true
       when '>'
         case next_char
         when '+'
           next_char
-          @token.type = :fold_keep
+          Token.new :fold_keep, location
         when '-'
           next_char
-          @token.type = :fold_strip
+          Token.new :fold_strip, location
         else
-          @token.type = :fold
+          Token.new :fold, location
         end
-        finalize_token true
       when '-'
         if next_char == '-' && next_char == '-'
           next_char
-          @token.type = :document_start
+          Token.new :document_start, location
         else
-          @token.type = :list
+          Token.new :list, location
         end
-        finalize_token true
       when '.'
         if next_char == '.' && next_char == '.'
           next_char
-          @token.type = :document_end
-          finalize_token true
+          Token.new :document_end, location
         else
           lex_string
         end
@@ -127,19 +123,6 @@ module StrictYAML
       end
     end
 
-    private def finalize_token(with_value : Bool) : Nil
-      @token.pos.line_stop = @line
-      @token.pos.column_stop = @reader.pos
-
-      if with_value
-        slice = Slice.new(
-          @reader.string.to_unsafe + @token.pos.column_start,
-          @token.pos.column_stop - @token.pos.column_start
-        )
-        @token.value = @pool.get slice
-      end
-    end
-
     private def current_char : Char
       @reader.current_char
     end
@@ -148,23 +131,40 @@ module StrictYAML
       @reader.next_char
     end
 
-    private def lex_space : Nil
+    private def current_pos : Int32
+      @reader.pos
+    end
+
+    private def location : Location
+      @loc.end_at(@line, @column)
+      @loc
+    end
+
+    private def read_string_from(start : Int32) : String
+      @pool.get Slice.new(@reader.string.to_unsafe + start, @reader.pos - start)
+    end
+
+    private def lex_space : Token
+      start = current_pos
       while current_char == ' '
         next_char
       end
 
-      @token.type = :space
-      finalize_token true
+      Token.new :space, location, read_string_from start
     end
 
-    private def lex_newline : Nil
+    private def lex_newline : Token
+      start = current_pos
+
       loop do
         case current_char
         when '\r'
           raise "expected '\\n' after '\\r'" unless next_char == '\n'
           @line += 1
+          @column = 0
         when '\n'
           @line += 1
+          @column = 0
         else
           break
         end
@@ -172,37 +172,34 @@ module StrictYAML
         next_char
       end
 
-      @token.type = :newline
-      finalize_token true
+      Token.new :newline, location, read_string_from start
     end
 
-    private def lex_string : Nil
+    private def lex_string : Token
+      start = current_pos
       until current_char.in?('\0', '\r', '\n', ':', '#')
         next_char
       end
 
-      @token.type = :string
-      finalize_token true
+      Token.new :string, location, read_string_from start
     end
 
-    private def lex_comment : Nil
+    private def lex_comment : Token
+      start = current_pos + 1
       until current_char.in?('\0', '\r', '\n')
         next_char
       end
 
-      @token.pos.column_start += 1
-      @token.type = :comment
-      finalize_token true
+      Token.new :comment, location, read_string_from start
     end
 
-    private def lex_directive : Nil
+    private def lex_directive : Token
+      start = current_pos + 1
       until current_char.in?('\0', '\r', '\n', '#')
         next_char
       end
 
-      @token.pos.column_start += 1
-      @token.type = :directive
-      finalize_token true
+      Token.new :directive, location, read_string_from start
     end
   end
 end
