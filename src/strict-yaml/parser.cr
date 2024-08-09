@@ -144,8 +144,8 @@ module StrictYAML
     end
 
     private def parse_mapping(token : Token) : Node
-      key = Scalar.parse token.pos, token.value
-      value = parse_next_node || Null.new token.pos
+      key = Scalar.parse token.loc, token.value
+      value = parse_next_node || Null.new token.loc
 
       Mapping.new(token.loc & value.loc, key, value)
     end
@@ -165,7 +165,7 @@ module StrictYAML
           when .space?
             break inner if inner.value.size < indent
           when .comment?
-            comments << Comment.new token.pos, token.value
+            comments << Comment.new token.loc, token.value
           else
             break inner
           end
@@ -191,7 +191,7 @@ module StrictYAML
           when .string?
             io << inner.value
           when .comment?
-            comments << Comment.new inner.pos, inner.value
+            comments << Comment.new inner.loc, inner.value
           when .space?
             break inner if inner.value.size < indent
           when .newline?
@@ -229,11 +229,11 @@ module StrictYAML
           if node = parse_token next_token
             values << node
           else
-            values << Null.new inner.pos
+            values << Null.new inner.loc
             break inner
           end
         when .comment?
-          comments << Comment.new inner.pos, inner.value
+          comments << Comment.new inner.loc, inner.value
         when .space?, .newline?
           next
         else
@@ -283,7 +283,7 @@ module StrictYAML
         raise "TAG directives are not allowed", token.loc
       end
 
-      Directive.new token.pos, token.value
+      Directive.new token.loc, token.value
     end
   end
 end

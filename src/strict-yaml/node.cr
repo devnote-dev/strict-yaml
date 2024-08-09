@@ -1,15 +1,4 @@
 module StrictYAML
-  class Position
-    property line_start : Int32
-    property line_stop : Int32
-    property column_start : Int32
-    property column_stop : Int32
-
-    def initialize(@line_start : Int32, @column_start : Int32)
-      @line_stop = @column_stop = 0
-    end
-  end
-
   class Location
     @value : StaticArray(Int32, 4)
 
@@ -41,10 +30,10 @@ module StrictYAML
   end
 
   abstract class Node
-    getter pos : Position
-    property comments : Array(Comment)
+    property loc : Location
+    getter comments : Array(Comment)
 
-    def initialize(@pos : Position, @comments : Array(Comment) = [] of Comment)
+    def initialize(@loc : Location, @comments : Array(Comment) = [] of Comment)
     end
 
     abstract def to_object : Any::Type
@@ -54,34 +43,23 @@ module StrictYAML
     property value : String
 
     def self.new(value : String)
-      new Position.new(0, 0), value
+      new Location[0, 0], value
     end
 
-    def self.parse(value : String)
-      parse Position.new(0, 0), value
+    def self.new(token : Token)
+      new token.loc, token.value
     end
 
-    def self.parse(pos : Position, value : String, comments : Array(Comment) = [] of Comment)
-      if quoted? value
-        char = value[0]
-        return new pos, value.strip(char), comments
-      end
-
-      case value.downcase
-      when "true"  then Boolean.new pos, true, comments
-      when "false" then Boolean.new pos, false, comments
-      when "null"  then Null.new pos
-      else              new pos, value.strip(' '), comments
-      end
+    def initialize(loc : Location, @value : String, @comments : Array(Comment) = [] of Comment)
+      super loc
     end
 
-    def self.quoted?(str : String) : Bool
-      (str.starts_with?('"') && str.ends_with?('"')) ||
-        (str.starts_with?('\'') && str.ends_with?('\''))
-    end
-
-    def initialize(pos : Position, @value : String, @comments : Array(Comment) = [] of Comment)
-      super pos
+    # TODO: clarify in spec for upcoming #parse:
+    # non-quoted scalar == implicit string (CAN be parsed into boolean/null)
+    # quoted scalar == explicit string (CANNOT be parsed into boolean/null)
+    def quoted?(str : String) : Bool
+      (@value.starts_with?('"') && @value.ends_with?('"')) ||
+        (@value.starts_with?('\'') && @value.ends_with?('\''))
     end
 
     def to_object : Any::Type
@@ -93,11 +71,11 @@ module StrictYAML
     property value : Bool # ameba:disable Style/QueryBoolMethods
 
     def self.new(value : Bool)
-      new Position.new(0, 0), value
+      new Location[0, 0], value
     end
 
-    def initialize(pos : Position, @value : Bool, @comments : Array(Comment) = [] of Comment)
-      super pos
+    def initialize(loc : Location, @value : Bool, @comments : Array(Comment) = [] of Comment)
+      super loc
     end
 
     def to_object : Any::Type
@@ -107,11 +85,11 @@ module StrictYAML
 
   class Null < Node
     def self.empty
-      new Position.new(0, 0)
+      new Location[0, 0]
     end
 
-    def initialize(pos : Position, @comments : Array(Comment) = [] of Comment)
-      super pos
+    def initialize(loc : Location, @comments : Array(Comment) = [] of Comment)
+      super loc
     end
 
     def to_object : Any::Type
@@ -124,11 +102,11 @@ module StrictYAML
     property value : Node
 
     def self.new(key : Node, value : Node)
-      new Position.new(0, 0), key, value
+      new Location[0, 0], key, value
     end
 
-    def initialize(pos : Position, @key : Node, @value : Node)
-      super pos
+    def initialize(loc : Location, @key : Node, @value : Node)
+      super loc
     end
 
     def to_object : Any::Type
@@ -140,11 +118,11 @@ module StrictYAML
     property values : Array(Node)
 
     def self.new(values : Array(Node))
-      new Position.new(0, 0), values
+      new Location[0, 0], values
     end
 
-    def initialize(pos : Position, @values : Array(Node), comments : Array(Comment) = [] of Comment)
-      super pos, comments
+    def initialize(loc : Location, @values : Array(Node), comments : Array(Comment) = [] of Comment)
+      super loc, comments
     end
 
     def to_object : Any::Type
@@ -154,7 +132,7 @@ module StrictYAML
 
   class DocumentStart < Node
     def self.empty
-      new Position.new(0, 0)
+      new Location[0, 0]
     end
 
     def to_object : Any::Type
@@ -164,7 +142,7 @@ module StrictYAML
 
   class DocumentEnd < Node
     def self.empty
-      new Position.new(0, 0)
+      new Location[0, 0]
     end
 
     def to_object : Any::Type
@@ -176,11 +154,11 @@ module StrictYAML
     property value : String
 
     def self.new(value : String)
-      new Position.new(0, 0), value
+      new Location[0, 0], value
     end
 
-    def initialize(pos : Position, @value : String)
-      super pos
+    def initialize(loc : Location, @value : String)
+      super loc
     end
 
     def to_object : Any::Type
@@ -192,11 +170,11 @@ module StrictYAML
     property value : String
 
     def self.new(value : String)
-      new Position.new(0, 0), value
+      new Location[0, 0], value
     end
 
-    def initialize(pos : Position, @value : String)
-      super pos
+    def initialize(loc : Location, @value : String)
+      super loc
     end
 
     def to_object : Any::Type
