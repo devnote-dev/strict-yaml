@@ -28,9 +28,15 @@ module StrictYAML
       {@value[2], @value[3]}
     end
 
-    def end_at(line : Int32, column : Int32)
+    def end_at(line : Int32, column : Int32) : self
       @value[2] = line
       @value[3] = column
+
+      self
+    end
+
+    def &(other : Location) : Location
+      Location[@value[0], @value[1]].end_at(*other.end)
     end
   end
 

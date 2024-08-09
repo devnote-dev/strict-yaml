@@ -67,15 +67,6 @@ module StrictYAML
       @tokens[@pos + 1]
     end
 
-    # TODO: remove this with &
-    private def join(start : Position, stop : Position) : Position
-      pos = start.dup
-      pos.line_stop = stop.line_stop
-      pos.column_stop = stop.column_stop
-
-      pos
-    end
-
     # TODO: replace these with something better
     private def expect_next?(kind : Token::Kind, *, allow_space : Bool = false) : Token?
       expect_next(kind, allow_space: allow_space) rescue nil
@@ -141,14 +132,14 @@ module StrictYAML
         end
       end
 
-      Scalar.parse join(token.pos, last.pos), value
+      Scalar.parse(token.loc & last.loc, value)
     end
 
     private def parse_mapping(token : Token) : Node
       key = Scalar.parse token.pos, token.value
       value = parse_next_node || Null.new token.pos
 
-      Mapping.new join(token.pos, value.pos), key, value
+      Mapping.new(token.loc & value.loc, key, value)
     end
 
     private def parse_pipe_scalar(token : Token) : Node
@@ -176,7 +167,7 @@ module StrictYAML
       value = value.rstrip('\n') unless token.kind.pipe_keep?
       value += "\n" if token.kind.pipe?
 
-      Scalar.parse join(token.pos, last.pos), value, comments
+      Scalar.parse(token.loc & last.loc, value, comments)
     end
 
     private def parse_folding_scalar(token : Token) : Node
@@ -214,7 +205,7 @@ module StrictYAML
       value = value.rstrip unless token.kind.fold_keep?
       value += "\n" if token.kind.fold?
 
-      Scalar.parse join(token.pos, last.pos), value, comments
+      Scalar.parse(token.loc & last.loc, value, comments)
     end
 
     private def parse_list(token : Token) : Node
@@ -243,7 +234,7 @@ module StrictYAML
         end
       end
 
-      List.new join(token.pos, last.pos), values, comments
+      List.new(token.loc & last.loc, values, comments)
     end
 
     private def parse_comment(token : Token) : Node
@@ -269,7 +260,7 @@ module StrictYAML
         end
       end
 
-      Comment.new join(token.pos, last.pos), value
+      Comment.new(token.loc & last.loc, value)
     end
 
     private def parse_directive(token : Token) : Node
