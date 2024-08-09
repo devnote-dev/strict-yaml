@@ -324,10 +324,11 @@ describe StrictYAML::Parser do
 
       nodes = StrictYAML::Parser.parse(tokens).nodes
 
-      nodes.size.should eq 3
+      nodes.size.should eq 4
       nodes[0].should be_a StrictYAML::Directive
-      nodes[1].should be_a StrictYAML::Mapping
-      nodes[2].should be_a StrictYAML::DocumentEnd
+      nodes[1].should be_a StrictYAML::DocumentStart
+      nodes[2].should be_a StrictYAML::Mapping
+      nodes[3].should be_a StrictYAML::DocumentEnd
     end
   end
 
