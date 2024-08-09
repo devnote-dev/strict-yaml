@@ -39,6 +39,38 @@ module StrictYAML
     abstract def to_object : Any::Type
   end
 
+  class Space < Node
+    property value : String
+
+    def self.new(token : Token)
+      new token.loc, token.value
+    end
+
+    def initialize(loc : Location, @value : String, @comments : Array(Comment) = [] of Comment)
+      super loc
+    end
+
+    def to_object : Any::Type
+      nil
+    end
+  end
+
+  class Newline < Node
+    property value : String
+
+    def self.new(token : Token)
+      new token.loc, token.value
+    end
+
+    def initialize(loc : Location, @value : String, @comments : Array(Comment) = [] of Comment)
+      super loc
+    end
+
+    def to_object : Any::Type
+      nil
+    end
+  end
+
   class Scalar < Node
     property value : String
 
