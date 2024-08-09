@@ -12,15 +12,30 @@ module StrictYAML
 
   class Parser
     @allow_invalid : Bool
+    @include_spaces : Bool
+    @include_newlines : Bool
+    @parse_scalars : Bool
+    @sensitive_scalars : Bool
     @errors : Array(Error)
     @tokens : Array(Token)
     @pos : Int32
 
-    def self.parse(tokens : Array(Token), *, allow_invalid : Bool = false) : SyntaxTree
-      new(tokens, allow_invalid).parse
+    def self.parse(tokens : Array(Token), *, allow_invalid : Bool = false,
+                   include_spaces : Bool = false, include_newlines : Bool = false,
+                   parse_scalars : Bool = true, sensitive_scalars : Bool = false) : SyntaxTree
+      new(
+        tokens,
+        allow_invalid,
+        include_spaces,
+        include_newlines,
+        parse_scalars,
+        sensitive_scalars
+      ).parse
     end
 
-    private def initialize(@tokens : Array(Token), @allow_invalid : Bool)
+    private def initialize(@tokens : Array(Token), @allow_invalid : Bool, @include_spaces : Bool,
+                           @include_newlines : Bool, @parse_scalars : Bool,
+                           @sensitive_scalars : Bool)
       @pos = 0
       @errors = [] of Error
     end
@@ -42,9 +57,19 @@ module StrictYAML
       in .eof?
         nil
       in .space?
-        advance { Space.new current_token }
+        if @include_spaces
+          advance { Space.new current_token }
+        else
+          next_token
+          parse_next_node
+        end
       in .newline?
-        advance { Newline.new current_token }
+        if @include_newlines
+          advance { Newline.new current_token }
+        else
+          next_token
+          parse_next_node
+        end
       in .string?
         parse_scalar_or_mapping current_token
       in .colon?
@@ -152,7 +177,18 @@ module StrictYAML
         end
       end
 
-      Scalar.new(token.loc & last.loc, value)
+      if @parse_scalars
+        value = value.downcase unless @sensitive_scalars
+        if value == "true" || value == "false"
+          Boolean.new(token.loc & last.loc, value == "true")
+        elsif value == "null"
+          Null.new(token.loc & last.loc)
+        else
+          Scalar.new(token.loc & last.loc, value)
+        end
+      else
+        Scalar.new(token.loc & last.loc, value)
+      end
     end
 
     private def parse_mapping(token : Token) : Node
