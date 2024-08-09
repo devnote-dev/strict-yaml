@@ -38,36 +38,46 @@ module StrictYAML
     end
 
     private def parse_next_node : Node?
-      case (token = next_token).kind
+      case current_token.kind
       in .eof?
         nil
       in .space?
-        Space.new token
+        advance { Space.new current_token }
       in .newline?
-        Newline.new token
+        advance { Newline.new current_token }
       in .string?
-        parse_scalar_or_mapping token
+        parse_scalar_or_mapping current_token
       in .colon?
-        parse_mapping token
+        parse_mapping next_token
       in .pipe?, .pipe_keep?, .pipe_strip?
-        parse_pipe_scalar token
+        parse_pipe_scalar current_token
       in .fold?, .fold_keep?, .fold_strip?
-        parse_folding_scalar token
+        parse_folding_scalar current_token
       in .list?
-        parse_list token
+        parse_list current_token
       in .document_start?
-        DocumentStart.new token.loc
+        advance { DocumentStart.new current_token.loc }
       in .document_end?
-        DocumentEnd.new token.loc
+        advance { DocumentEnd.new current_token.loc }
       in .comment?
-        parse_comment token
+        parse_comment current_token
       in .directive?
-        parse_directive token
+        parse_directive current_token
       end
+    end
+
+    private def current_token : Token
+      @tokens[@pos]
     end
 
     private def next_token : Token
       @tokens[@pos += 1]
+    end
+
+    private def advance(& : -> T) : T forall T
+      value = yield
+      next_token
+      value
     end
 
     # TODO: remove this
