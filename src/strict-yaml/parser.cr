@@ -1,7 +1,15 @@
 module StrictYAML
+  class Error < Exception
+    getter message : String
+    getter loc : Location
+
+    def initialize(@message : String, @loc : Location)
+    end
+  end
+
   class Parser
     @allow_invalid : Bool
-    @errors : Array(Issue)
+    @errors : Array(Error)
     @tokens : Array(Token)
     @pos : Int32
 
@@ -10,7 +18,7 @@ module StrictYAML
     end
 
     private def initialize(@tokens : Array(Token), @allow_invalid : Bool)
-      @errors = [] of Issue
+      @errors = [] of Error
     end
 
     def parse : SyntaxTree
@@ -75,7 +83,7 @@ module StrictYAML
     private def expect_next(kind : Token::Kind, *, allow_space : Bool = false) : Token
       case (token = next_token).kind
       when .eof?
-        ::raise ParseError.new "Expected token #{type}; got End of File"
+        ::raise Error.new "Expected token #{type}; got End of File", token.loc
       when .comment?
         expect_next kind, allow_space: allow_space
       else
@@ -85,15 +93,15 @@ module StrictYAML
           return expect_next kind, allow_space: allow_space
         end
 
-        raise token, "Expected token #{kind}; got #{token.kind}"
+        raise "Expected token #{kind}; got #{token.kind}", token.loc
 
         Token.new :space, token.loc, " " # dummy
       end
     end
 
-    private def raise(token : Token, message : String) : Nil
-      ::raise ParseError.new message unless @allow_invalid
-      @errors << Issue.new(message, token.pos)
+    private def raise(message : String, loc : Location) : Nil
+      ::raise Error.new(message, loc) unless @allow_invalid
+      @errors << Error.new(message, loc)
     end
 
     private def parse_scalar_or_mapping(token : Token) : Node
@@ -270,9 +278,9 @@ module StrictYAML
       case token.value
       when .starts_with? "YAML "
         version = token.value.split(' ', 2).last.strip
-        raise token, "invalid YAML version directive" unless version.in?("1.0", "1.1", "1.2")
+        raise "invalid YAML version directive", token.loc unless version.in?("1.0", "1.1", "1.2")
       when .starts_with? "TAG "
-        raise token, "TAG directives are not allowed"
+        raise "TAG directives are not allowed", token.loc
       end
 
       Directive.new token.pos, token.value
