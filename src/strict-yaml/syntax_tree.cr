@@ -1,9 +1,9 @@
 module StrictYAML
   class SyntaxTree
     property nodes : Array(Node)
-    property issues : Array(Issue)
+    property issues : Array(Error)
 
-    def initialize(@nodes : Array(Node), @issues : Array(Issue))
+    def initialize(@nodes : Array(Node), @issues : Array(Error))
     end
 
     def issues? : Bool
