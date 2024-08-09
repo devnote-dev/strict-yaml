@@ -291,14 +291,11 @@ module StrictYAML
         when .list?
           next_token
           loop do
-            if node = parse_next_node
-              values << node
-              token = current_token
-              break if token.kind.newline?
-            else
-              values << Null.new token.loc
-              break
-            end
+            break unless node = parse_next_node
+
+            values << node
+            token = current_token
+            break if token.kind.newline?
           end
         when .comment?
           comments << Comment.new token.loc, token.value
