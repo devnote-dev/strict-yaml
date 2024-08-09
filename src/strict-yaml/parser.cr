@@ -229,33 +229,37 @@ module StrictYAML
     end
 
     private def parse_list(token : Token) : Node
+      start = token.loc
       values = [] of Node
       comments = [] of Comment
-      pp! token
-      @pos -= 1
 
       last = loop do
-        break token unless inner = next_token?
-
-        case inner.kind
+        case token.kind
         when .list?
-          if node = parse_next_node
-            values << node
-          else
-            values << Null.new inner.loc
-            break inner
+          next_token
+          loop do
+            if node = parse_next_node
+              values << node
+              token = current_token
+              break if token.kind.newline?
+            else
+              values << Null.new token.loc
+              break
+            end
           end
         when .comment?
-          comments << Comment.new inner.loc, inner.value
+          comments << Comment.new token.loc, token.value
+          token = next_token
         when .space?, .newline?
+          token = next_token
           next
         else
-          @pos -= 1
-          break inner
+          @pos -= 1 unless token.kind.eof?
+          break token
         end
       end
 
-      List.new(token.loc & last.loc, values, comments)
+      List.new(start & last.loc, values, comments)
     end
 
     private def parse_comment(token : Token) : Node
