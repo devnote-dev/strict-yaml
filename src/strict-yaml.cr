@@ -33,8 +33,8 @@ module StrictYAML
   end
 
   def self.parse_documents(source : String) : Array(Document)
-    tokens = Lexer.new(source).run
-    ast = Parser.new(tokens).parse
+    tokens = Lexer.run source
+    ast = Parser.parse tokens
     ast.raise if ast.issues?
 
     ast.parse_documents
