@@ -105,18 +105,8 @@ module StrictYAML
       value
     end
 
-    # TODO: remove this
-    private def next_token? : Token?
-      @tokens[@pos += 1]?
-    end
-
     private def peek_token : Token
       @tokens[@pos + 1]
-    end
-
-    # TODO: replace these with something better
-    private def expect_next?(kind : Token::Kind, *, allow_space : Bool = false) : Token?
-      expect_next(kind, allow_space: allow_space) rescue nil
     end
 
     private def expect_next(kind : Token::Kind, *, allow_space : Bool = false) : Token
@@ -318,16 +308,13 @@ module StrictYAML
         io << token.value
 
         loop do
-          unless inner = next_token?
-            last = token
+          case (inner = next_token).kind
+          when .eof?
             break
-          end
-
-          case inner.kind
-          when .comment?
-            io << '\n' << inner.value
           when .space?, .newline?
             next
+          when .comment?
+            io << '\n' << inner.value
           else
             last = inner
             break
