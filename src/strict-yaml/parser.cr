@@ -159,8 +159,7 @@ module StrictYAML
       key = Scalar.new token.loc, token.value
 
       # TODO: consider adding a #padding field to account for space/comment after colon
-      value = uninitialized Node
-      loop do
+      value = loop do
         case (inner = next_token).kind
         when .space?
           next
@@ -168,14 +167,12 @@ module StrictYAML
           if peek_token.kind.space?
             next
           else
-            value = Null.new inner.loc
-            break
+            break Null.new inner.loc
           end
         when .comment?
           key.comments << Comment.new inner.loc, inner.value
         else
-          value = parse_next_node || Null.new token.loc
-          break
+          break parse_next_node || Null.new token.loc
         end
       end
 
