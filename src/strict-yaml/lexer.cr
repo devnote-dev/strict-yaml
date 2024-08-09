@@ -61,7 +61,7 @@ module StrictYAML
       loop do
         token = lex_next_token
         tokens << token
-        break if token.type.eof?
+        break if token.kind.eof?
       end
 
       tokens
