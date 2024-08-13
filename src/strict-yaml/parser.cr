@@ -181,28 +181,52 @@ module StrictYAML
       end
     end
 
-    private def parse_mapping(token : Token) : Node
+    private def parse_mapping(token : Token, indent : Int32 = 0) : Node
       key = Scalar.new token.loc, token.value
+      values = [] of Node
 
-      # TODO: consider adding a #padding field to account for space/comment after colon
-      value = loop do
+      p! indent
+
+      # foo:
+      #   bar: true
+      #   baz: false
+      last = loop do
         case (inner = next_token).kind
         when .space?
-          next
+          next if indent == 0
+          break inner.loc if inner.value.size < indent
         when .newline?
-          if peek_token.kind.space?
-            next
+          if values.empty?
+            inner = next_token
+            if inner.kind.space?
+              case peek_token.kind
+              when .list?
+                values << (node = parse_list next_token)
+                break node.loc
+              when .string?
+                values << (node = parse_next_node.not_nil!)
+                break node.loc unless node.is_a? Mapping
+              else
+                break inner.loc
+              end
+            elsif inner.kind.list?
+              next_token
+              values << parse_next_node.not_nil!
+            else
+              values
+            end
           else
-            break Null.new inner.loc
+            values << Null.new inner.loc
+            break inner.loc
           end
-        when .comment?
-          key.comments << Comment.new inner.loc, inner.value
         else
-          break parse_next_node || Null.new token.loc
+          node = parse_next_node || Null.new inner.loc
+          values << node
+          break node.loc
         end
       end
 
-      Mapping.new(token.loc & value.loc, key, value)
+      Mapping.new(token.loc & last, key, values)
     end
 
     private def parse_pipe_scalar(token : Token) : Node
