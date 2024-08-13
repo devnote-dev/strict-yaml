@@ -131,18 +131,18 @@ module StrictYAML
 
   class Mapping < Node
     property key : Node
-    property value : Node
+    property values : Array(Node)
 
-    def self.new(key : Node, value : Node)
-      new Location[0, 0], key, value
+    def self.new(key : Node, values : Array(Node))
+      new Location[0, 0], key, values
     end
 
-    def initialize(loc : Location, @key : Node, @value : Node)
+    def initialize(loc : Location, @key : Node, @values : Array(Node))
       super loc
     end
 
     def to_object : Any::Type
-      {Any.new(@key.to_object) => Any.new(@value.to_object)}
+      {Any.new(@key.to_object) => Any.new(@values.reject(Space | Comment)[0].to_object)}
     end
   end
 
