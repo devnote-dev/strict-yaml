@@ -18,7 +18,9 @@ module StrictYAML
     @sensitive_scalars : Bool
     @errors : Array(Error)
     @tokens : Array(Token)
+
     @pos : Int32
+    @map_indent : Int32
 
     def self.parse(tokens : Array(Token), *, allow_invalid : Bool = false,
                    include_spaces : Bool = false, include_newlines : Bool = false,
@@ -37,6 +39,7 @@ module StrictYAML
                            @include_newlines : Bool, @parse_scalars : Bool,
                            @sensitive_scalars : Bool)
       @pos = 0
+      @map_indent = 0
       @errors = [] of Error
     end
 
@@ -181,46 +184,46 @@ module StrictYAML
       end
     end
 
-    private def parse_mapping(token : Token, indent : Int32 = 0) : Node
+    # TODO: re-add space/newlines nodes into values at some point
+    private def parse_mapping(token : Token) : Node
       key = Scalar.new token.loc, token.value
       values = [] of Node
 
-      p! indent
-
-      # foo:
-      #   bar: true
-      #   baz: false
+      next_token
       last = loop do
-        case (inner = next_token).kind
+        case current_token.kind
+        when .eof?
+          values << Null.new current_token.loc
+          break current_token.loc
         when .space?
-          next if indent == 0
-          break inner.loc if inner.value.size < indent
+          next next_token if @map_indent == 0
+          break current_token.loc if current_token.value.size < @map_indent
+          next_token
         when .newline?
-          if values.empty?
-            inner = next_token
-            if inner.kind.space?
-              case peek_token.kind
-              when .list?
-                values << (node = parse_list next_token)
-                break node.loc
-              when .string?
-                values << (node = parse_next_node.not_nil!)
-                break node.loc unless node.is_a? Mapping
-              else
-                break inner.loc
-              end
-            elsif inner.kind.list?
-              next_token
-              values << parse_next_node.not_nil!
+          case (inner = next_token).kind
+          when .space?
+            @map_indent = inner.value.size
+            next_token
+            values << (node = parse_next_node.as(Node))
+            break node.loc unless node.is_a? Mapping
+            break node.loc if current_token.kind.eof?
+          when .list?, .pipe?, .pipe_keep?, .pipe_strip?, .fold?, .fold_keep?, .fold_strip?
+            values << (node = parse_next_node.as(Node))
+            break node.loc
+          when .string?
+            if peek_token.kind.colon?
+              values << Null.new inner.loc
+              break inner.loc
             else
-              values
+              raise "string value is not allowed in this context", peek_token.loc
+              values << Null.new inner.loc
+              break inner.loc
             end
           else
-            values << Null.new inner.loc
-            break inner.loc
+            raise "unreachable"
           end
         else
-          node = parse_next_node || Null.new inner.loc
+          node = parse_next_node || Null.new current_token.loc
           values << node
           break node.loc
         end
