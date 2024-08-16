@@ -149,7 +149,15 @@ module StrictYAML
     end
 
     def to_object : Any::Type
-      {Any.new(@key.to_object) => Any.new(@values.reject(Space | Comment)[0].to_object)}
+      if @values.size == 1
+        {Any.new(@key.to_object) => Any.new(@values[0].to_object)}
+      else
+        hash = @values.reduce({} of Any => Any) do |acc, i|
+          acc.merge i.to_object.as(Hash(Any, Any))
+        end
+
+        {Any.new(@key.to_object) => Any.new(hash)}
+      end
     end
   end
 
