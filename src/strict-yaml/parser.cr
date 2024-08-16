@@ -24,7 +24,7 @@ module StrictYAML
 
     def self.parse(tokens : Array(Token), *, allow_invalid : Bool = false,
                    include_spaces : Bool = false, include_newlines : Bool = false,
-                   parse_scalars : Bool = true, sensitive_scalars : Bool = false) : SyntaxTree
+                   parse_scalars : Bool = true, sensitive_scalars : Bool = false) : Stream
       new(
         tokens,
         allow_invalid,
@@ -43,7 +43,7 @@ module StrictYAML
       @errors = [] of Error
     end
 
-    def parse : SyntaxTree
+    def parse : Stream
       nodes = [] of Node
 
       loop do
@@ -52,7 +52,34 @@ module StrictYAML
         break if @tokens.empty?
       end
 
-      SyntaxTree.new nodes, @errors
+      documents = [] of Document
+      doc = Document.new [] of Node
+
+      nodes.each do |node|
+        case node
+        when DocumentStart
+          doc.nodes.clear << node
+        when DocumentEnd
+          doc.nodes << node
+          documents << doc
+          doc = Document.new [] of Node
+        else
+          doc.nodes << node
+        end
+      end
+
+      documents << doc unless doc.nodes.empty?
+
+      documents.each do |document|
+        root = document.nodes.reject(Comment)[0].class
+
+        document.nodes.each do |node|
+          next if node.class == root || node.is_a?(Comment | Directive | DocumentStart | DocumentEnd)
+          raise "#{node.class} value is not allowed in this context", node.loc
+        end
+      end
+
+      Stream.new documents, @errors
     end
 
     private def parse_next_node : Node?
