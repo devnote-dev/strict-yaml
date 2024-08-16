@@ -1,16 +1,25 @@
 module StrictYAML
   class Document
-    property version : String
     property nodes : Array(Node)
 
     def initialize(@nodes : Array(Node))
-      @version = "1.2"
+    end
 
-      return unless dir = @nodes.first.as? Directive
-      return unless dir.value.starts_with? "YAML "
+    def version : String
+      @version ||= begin
+        if dir = @nodes[0].as?(Directive)
+          if dir.value.starts_with? "YAML "
+            dir.value.split(' ', 2).last
+          else
+            "1.2"
+          end
+        else
+          "1.2"
+        end
+      end
+    end
 
-      @version = dir.value.split(' ', 2).last
-      @nodes.shift
+    def version=(@version : String)
     end
   end
 end
