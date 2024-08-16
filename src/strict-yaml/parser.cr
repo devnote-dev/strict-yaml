@@ -196,15 +196,16 @@ module StrictYAML
           values << Null.new current_token.loc
           break current_token.loc
         when .space?
-          next next_token if @map_indent == 0
-          break current_token.loc if current_token.value.size < @map_indent
           next_token
         when .newline?
           case (inner = next_token).kind
           when .space?
+            break inner.loc if inner.value.size < @map_indent
+
             @map_indent = inner.value.size
             next_token
             values << (node = parse_next_node.as(Node))
+
             break node.loc unless node.is_a? Mapping
             break node.loc if current_token.kind.eof?
           when .list?, .pipe?, .pipe_keep?, .pipe_strip?, .fold?, .fold_keep?, .fold_strip?
