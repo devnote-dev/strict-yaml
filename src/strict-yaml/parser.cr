@@ -71,11 +71,23 @@ module StrictYAML
       documents << doc unless doc.nodes.empty?
 
       documents.each do |document|
-        root = document.nodes.reject(Comment)[0].class
+        root = document.nodes.select do |node|
+          case node
+          when Comment, Directive, DocumentStart, DocumentEnd
+            false
+          else
+            true
+          end
+        end[0].class
 
         document.nodes.each do |node|
-          next if node.class == root || node.is_a?(Comment | Directive | DocumentStart | DocumentEnd)
-          raise "#{node.class} value is not allowed in this context", node.loc
+          next if node.class == root
+          case node
+          when Comment, Directive, DocumentStart, DocumentEnd
+            next
+          else
+            raise "#{node.class} value is not allowed in this context", node.loc
+          end
         end
       end
 
