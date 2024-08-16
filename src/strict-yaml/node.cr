@@ -17,6 +17,13 @@ module StrictYAML
       {@value[2], @value[3]}
     end
 
+    def start_at(line : Int32, column : Int32) : self
+      @value[0] = line
+      @value[1] = column
+
+      self
+    end
+
     def end_at(line : Int32, column : Int32) : self
       @value[2] = line
       @value[3] = column

@@ -128,6 +128,7 @@ module StrictYAML
     end
 
     private def next_char : Char
+      @column += 1
       @reader.next_char
     end
 
@@ -136,8 +137,9 @@ module StrictYAML
     end
 
     private def location : Location
-      @loc.end_at(@line, @column)
-      @loc
+      loc = @loc.end_at(@line, @column).dup
+      @loc.start_at(@line, @column)
+      loc
     end
 
     private def read_string_from(start : Int32) : String
