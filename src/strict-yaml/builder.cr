@@ -18,9 +18,11 @@ module StrictYAML
     @io : IO
     @type : CoreType
     @nodes : Array(Node)
+    @indent : Int32
 
     def initialize(@io : IO, @nodes : Array(Node) = [] of Node)
       @type = :none
+      @indent = 0
     end
 
     def directive(value : String) : Nil
@@ -54,8 +56,9 @@ module StrictYAML
       nodes = builder.@nodes
       raise "invalid key-value mapping pairs" unless nodes.size % 2 == 0
 
-      nodes = nodes.in_groups_of 2
-      # TODO: figure out the rest of this
+      nodes.in_groups_of(2).each do |(key, value)|
+        @nodes << Mapping.new key.as(Node), [value.as(Node)]
+      end
     end
 
     def list(& : Builder -> _) : Nil
@@ -74,38 +77,15 @@ module StrictYAML
     end
 
     def close : Nil
-      @nodes.each &->write(Node)
+      @nodes.each do |node|
+        check_indent
+        write node
+      end
       @io.flush
     end
 
-    private def write(node : Directive) : Nil
-      io << '%' << node.value
-    end
-
-    private def write(node : DocumentStart) : Nil
-      io << "---"
-    end
-
-    private def write(node : DocumentEnd) : Nil
-      io << "..."
-    end
-
-    private def write(node : Scalar) : Nil
-      io << node.value
-    end
-
-    private def write(node : Boolean) : Nil
-      io << ndoe.value
-    end
-
-    private def write(node : Null) : Nil
-      io << "null"
-    end
-
-    private def write(node : Mapping) : Nil
-    end
-
-    private def write(node : List) : Nil
+    private def check_indent : Nil
+      @io << " " * @indent unless @indent == 0
     end
 
     private def write(node : Space) : Nil
@@ -114,6 +94,80 @@ module StrictYAML
 
     private def write(node : Newline) : Nil
       @io << node.value
+    end
+
+    private def write(node : Scalar) : Nil
+      @io << node.value
+    end
+
+    private def write(node : Boolean) : Nil
+      @io << node.value
+    end
+
+    private def write(node : Null) : Nil
+      @io << "null"
+    end
+
+    private def write(node : Mapping) : Nil
+      write node.key
+      @io << ':'
+
+      if node.values.size == 1
+        if node.values[0].is_a?(List)
+          @io << '\n'
+          write node.values[0]
+        else
+          @io << ' '
+          write node.values[0]
+          @io << '\n'
+        end
+      else
+        @io << '\n'
+        @indent += 1
+
+        node.values.each do |value|
+          check_indent
+          write value
+        end
+
+        @indent -= 1
+        @io << '\n'
+      end
+    end
+
+    private def write(node : List) : Nil
+      @indent += 1
+
+      node.values.each do |value|
+        check_indent
+        @io << "- "
+        write value
+        @io << '\n'
+      end
+
+      @indent -= 1
+    end
+
+    private def write(node : DocumentStart) : Nil
+      @io << "---\n"
+    end
+
+    private def write(node : DocumentEnd) : Nil
+      @io << "...\n"
+    end
+
+    private def write(node : Comment) : Nil
+      check_indent
+      node.value.each_line do |line|
+        @io << "# " << line << '\n'
+      end
+    end
+
+    private def write(node : Directive) : Nil
+      @io << '%' << node.value
+    end
+
+    private def write(node : Node) : Nil
     end
   end
 end
