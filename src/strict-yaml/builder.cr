@@ -1,183 +1,119 @@
 module StrictYAML
   class Builder
-    @[Flags]
-    enum State
-      ListStart
-      ListBlock
-      MappingStart
-      MappingBlock
+    private enum CoreType
+      None
+      Scalar
+      Mapping
+      List
     end
 
-    enum Kind
-      List
-      Map
+    private class NullWriter < IO
+      def read(slice : Bytes) : Nil
+      end
+
+      def write(slice : Bytes) : Nil
+      end
     end
 
     @io : IO
-    @level : Int32
-    @indent : Int32
-    @newline : Bool
-    getter state : State
-    getter? closed : Bool
+    @type : CoreType
+    @nodes : Array(Node)
 
-    def initialize(@io : IO)
-      @level = 0
-      @indent = -2
-      @newline = false
-      @state = :none
-      @closed = false
+    def initialize(@io : IO, @nodes : Array(Node) = [] of Node)
+      @type = :none
     end
 
-    def document(*, version : String? = nil, & : ->) : Nil
-      document_start version: version
-      yield
-      check_state
-      document_end
+    def directive(value : String) : Nil
+      @nodes << Directive.new value
     end
 
-    def document_start(*, version : String? = nil) : Nil
-      unless version.nil?
-        @io << "%YAML " << version << '\n'
-      end
-      @io << "---"
-      @newline = true
+    def document_start : Nil
+      @nodes << DocumentStart.new
     end
 
     def document_end : Nil
-      @io << "..."
-      @newline = true
+      @nodes << DocumentEnd.new
     end
 
-    def scalar(value : _, *, quote : Bool = false) : Nil
-      check_state
-      if quote
-        @io << '"' << value << '"'
-      else
-        @io << value
-      end
-      @newline = true
+    def scalar(value : _) : Nil
+      @nodes << Scalar.new value.to_s
     end
 
     def boolean(value : Bool) : Nil
-      check_state
-      @io << value
-      @newline = true
+      @nodes << Boolean.new value
     end
 
     def null : Nil
-      check_state
-      @io << "null"
-      @newline = true
+      @nodes << Null.empty
     end
 
-    def list(& : ->) : Nil
-      check_state
-      @io << "- "
-      @indent += 2
-      @state |= State::ListStart
+    def mapping(& : Builder -> _) : Nil
+      builder = Builder.new NullWriter.new
+      with builder yield builder
 
-      yield
+      nodes = builder.@nodes
+      raise "invalid key-value mapping pairs" unless nodes.size % 2 == 0
 
-      @indent -= 2
-      @state &= ~State::ListBlock
+      nodes = nodes.in_groups_of 2
+      # TODO: figure out the rest of this
     end
 
-    def mapping(key : _, value : _) : Nil
-      check_state
-      @io << quote(key) << ':'
+    def list(& : Builder -> _) : Nil
+      builder = Builder.new NullWriter.new
+      with builder yield builder
 
-      case value
-      when Number, String, Bool, Char, Path, Symbol
-        @io << ' ' << scalar value
-        @newline = true
-      when Hash, NamedTuple
-        @io << "\n  "
-        @level += 2 if @level >= 2
-        @state |= State::MappingStart
-
-        value.each do |k, v|
-          mapping k, v
-        end
-
-        @level -= 2 if @level >= 4
-        @state &= ~State::MappingStart
-      else
-        @io << '\n'
-        list value
-      end
+      @nodes << List.new builder.@nodes
     end
 
-    def mapping(kind : Kind, key : _, & : ->) : Nil
-      check_state
-      @io << quote(key) << ":\n"
-      if kind.list?
-        list { yield }
-      else
-        @io << "  "
-        @level += 2
-        @state |= State::MappingStart
-
-        yield
-
-        @level -= 2
-        @state &= ~State::MappingStart
-      end
+    def comment(value : String) : Nil
+      @nodes << Comment.new value
     end
 
-    def comment(text : String) : Nil
-      @io << "  # " << text
-      @newline = true
+    def newline : Nil
+      @nodes << Newline.new "\n"
     end
 
     def close : Nil
-      return if @closed
-
-      check_state
+      @nodes.each &->write(Node)
       @io.flush
-      @closed = true
     end
 
-    private def check_state : Nil
-      if @newline
-        @io << '\n'
-        @newline = false
-      end
-
-      if @state.mapping_block?
-        @io << (" " * @level) unless @state.mapping_start? || @state.list_start?
-      end
-
-      if @state.mapping_start?
-        @state &= ~State::MappingStart
-        # if @state.mapping_block?
-        #   @io << (" " * (@level - 2))
-        # else
-        @state |= State::MappingBlock
-        # end
-      end
-
-      if @state.list_block?
-        @io << (" " * @indent) if @indent > 0 && !@state.list_start?
-        @io << "- " unless @state.list_start?
-      end
-
-      if @state.list_start?
-        @state &= ~State::ListStart
-        @state |= State::ListBlock
-      end
+    private def write(node : Directive) : Nil
+      io << '%' << node.value
     end
 
-    private def quote(value) : String
-      case value
-      when Number, String, Bool, Char, Path, Symbol
-        value.to_s
-      else
-        str = value.to_s
-        if str.includes? ' '
-          str = "'" + str + "'"
-        end
-        str
-      end
+    private def write(node : DocumentStart) : Nil
+      io << "---"
+    end
+
+    private def write(node : DocumentEnd) : Nil
+      io << "..."
+    end
+
+    private def write(node : Scalar) : Nil
+      io << node.value
+    end
+
+    private def write(node : Boolean) : Nil
+      io << ndoe.value
+    end
+
+    private def write(node : Null) : Nil
+      io << "null"
+    end
+
+    private def write(node : Mapping) : Nil
+    end
+
+    private def write(node : List) : Nil
+    end
+
+    private def write(node : Space) : Nil
+      @io << node.value
+    end
+
+    private def write(node : Newline) : Nil
+      @io << node.value
     end
   end
 end
