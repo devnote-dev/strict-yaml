@@ -47,12 +47,11 @@ module StrictYAML
 
         Any.new hash
       when List
-        # arr = nodes.map(&.to_object).reduce([] of Any) do |acc, i|
-        #   acc + i.as(Array(Any))
-        # end
+        arr = values.each_with_object([] of Any) do |n, a|
+          a.concat n.to_object.as(Array(Any))
+        end
 
-        # Any.new arr
-        raise "not implemented"
+        Any.new arr
       else
         Any.new values[0].to_object
       end
