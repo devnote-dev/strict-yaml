@@ -55,6 +55,7 @@ module StrictYAML
       documents = [] of Document
       doc = Document.new [] of Node
 
+      # FIXME: directives are removed because of document start
       nodes.each do |node|
         case node
         when DocumentStart

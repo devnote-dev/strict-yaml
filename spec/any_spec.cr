@@ -59,6 +59,8 @@ describe StrictYAML::Any do
     arr.should eq %w[foo bar baz]
   end
 
+  pending "parses nested lists" { }
+
   it "parses mappings" do
     any = StrictYAML.parse <<-YAML
       foo: bar
@@ -73,6 +75,8 @@ describe StrictYAML::Any do
     hash.should be_a Hash(String, String)
     hash.should eq({"foo" => "bar", "baz" => "qux"})
   end
+
+  pending "parses nested mappings" { }
 
   {% for base in %w[8 16 32 64 128] %}
     it "parses Int{{base.id}} numbers" do
