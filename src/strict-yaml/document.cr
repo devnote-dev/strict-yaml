@@ -1,8 +1,17 @@
 module StrictYAML
   class Document
-    property nodes : Array(Node)
+    enum CoreType
+      Invalid
+      Scalar
+      Mapping
+      List
+    end
+
+    getter nodes : Array(Node)
+    getter core_type : CoreType
 
     def initialize(@nodes : Array(Node))
+      @core_type = :invalid
     end
 
     def version : String
@@ -19,7 +28,12 @@ module StrictYAML
       end
     end
 
+    # :nodoc:
     def version=(@version : String)
+    end
+
+    # :nodoc:
+    def core_type=(@core_type : CoreType)
     end
 
     def to_any : Any
@@ -31,15 +45,8 @@ module StrictYAML
           true
         end
       end
-      root = values[0]
 
-      values.each do |node|
-        unless node.class == root.class
-          raise Error.new "#{node.class} value is not allowed in this context", node.loc
-        end
-      end
-
-      case root
+      case values[0]
       when Mapping
         hash = values.each_with_object({} of Any => Any) do |n, h|
           h.merge! n.to_object.as(Hash(Any, Any))

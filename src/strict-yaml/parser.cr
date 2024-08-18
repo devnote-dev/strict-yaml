@@ -124,6 +124,12 @@ module StrictYAML
             raise "#{node.class} value is not allowed in this context", node.loc
           end
         end
+
+        document.core_type = case root
+                             when Mapping then Document::CoreType::Mapping
+                             when List    then Document::CoreType::List
+                             else              Document::CoreType::Scalar
+                             end
       end
 
       Stream.new documents, @errors
