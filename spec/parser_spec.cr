@@ -279,6 +279,7 @@ describe StrictYAML::Parser do
     end
   end
 
+  # TODO: requires refinement
   describe StrictYAML::Directive do
     it "parses directives" do
       nodes = parse_nodes <<-YAML
@@ -288,11 +289,11 @@ describe StrictYAML::Parser do
         ...
         YAML
 
-      nodes.size.should eq 3 # TODO: should be 4 but directive is removed
-      # nodes[0].should be_a StrictYAML::Directive
-      nodes[0].should be_a StrictYAML::DocumentStart
-      nodes[1].should be_a StrictYAML::Mapping
-      nodes[2].should be_a StrictYAML::DocumentEnd
+      nodes.size.should eq 4
+      nodes[0].should be_a StrictYAML::Directive
+      nodes[1].should be_a StrictYAML::DocumentStart
+      nodes[2].should be_a StrictYAML::Mapping
+      nodes[3].should be_a StrictYAML::DocumentEnd
     end
   end
 
