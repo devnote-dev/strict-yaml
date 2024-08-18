@@ -54,13 +54,46 @@ module StrictYAML
 
       documents = [] of Document
       doc = Document.new [] of Node
+      doc_start = false
+      iter = nodes.each
 
-      # FIXME: directives are removed because of document start
-      nodes.each do |node|
-        case node
+      loop do
+        case node = iter.next
+        when Iterator::Stop
+          break
+        when Directive
+          doc.nodes << node
+
+          # TODO: should include space/newline here too at some point
+          loop do
+            case node = iter.next
+            when Comment
+              doc.nodes << node
+            when DocumentStart
+              doc_start = true
+              doc.nodes << node
+              break
+            else
+              loc = node.is_a?(Node) ? node.loc : doc.nodes[-1].loc
+              raise "expected a document start indicator after directive", loc
+              doc.nodes.clear
+              break
+            end
+          end
         when DocumentStart
-          doc.nodes.clear << node
+          if doc_start
+            documents << doc
+            doc = Document.new [] of Node
+          end
+
+          doc_start = true
+          doc.nodes << node
         when DocumentEnd
+          unless doc_start
+            raise "expected a document start indicator to precede document end indicator"
+          end
+
+          doc_start = false
           doc.nodes << node
           documents << doc
           doc = Document.new [] of Node
@@ -79,7 +112,8 @@ module StrictYAML
           else
             true
           end
-        end[0].class
+        end
+        root = root.empty? ? Null : root[0].class
 
         document.nodes.each do |node|
           next if node.class == root
