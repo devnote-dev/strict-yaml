@@ -264,7 +264,6 @@ module StrictYAML
       end
     end
 
-    # TODO: re-add space/newlines nodes into values at some point
     private def parse_mapping(token : Token) : Node
       key = Scalar.new token.loc, token.value
       values = [] of Node
@@ -276,8 +275,11 @@ module StrictYAML
           values << Null.new current_token.loc
           break current_token.loc
         when .space?
+          values << Space.new current_token if @include_spaces
           next_token
         when .newline?
+          values << Newline.new current_token if @include_newlines
+
           case (inner = next_token).kind
           when .space?
             break inner.loc if inner.value.size < @map_indent
