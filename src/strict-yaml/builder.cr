@@ -30,11 +30,11 @@ module StrictYAML
     end
 
     def document_start : Nil
-      @nodes << DocumentStart.new
+      @nodes << DocumentStart.new << Newline.new "\n"
     end
 
     def document_end : Nil
-      @nodes << DocumentEnd.new
+      @nodes << DocumentEnd.new << Newline.new "\n"
     end
 
     def scalar(value : _) : Nil
