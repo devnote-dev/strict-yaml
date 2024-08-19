@@ -44,6 +44,10 @@ module StrictYAML
     end
 
     abstract def to_object : Any::Type
+
+    def ==(other : Node) : Bool
+      false
+    end
   end
 
   class Space < Node
@@ -60,6 +64,10 @@ module StrictYAML
     def to_object : Any::Type
       nil
     end
+
+    def ==(other : Space) : Bool
+      @value == other.value
+    end
   end
 
   class Newline < Node
@@ -75,6 +83,10 @@ module StrictYAML
 
     def to_object : Any::Type
       nil
+    end
+
+    def ==(other : Newline) : Bool
+      @value == other.value
     end
   end
 
@@ -104,6 +116,10 @@ module StrictYAML
     def to_object : Any::Type
       @value
     end
+
+    def ==(other : Scalar) : Bool
+      @value == other.value
+    end
   end
 
   class Boolean < Node
@@ -120,6 +136,10 @@ module StrictYAML
     def to_object : Any::Type
       @value
     end
+
+    def ==(other : Boolean) : Bool
+      @value == other.value
+    end
   end
 
   class Null < Node
@@ -133,6 +153,10 @@ module StrictYAML
 
     def to_object : Any::Type
       nil
+    end
+
+    def ==(other : Null) : Bool
+      true
     end
   end
 
@@ -158,6 +182,10 @@ module StrictYAML
 
         {Any.new(@key.to_object) => Any.new(hash)}
       end
+    end
+
+    def ==(other : Mapping) : Bool
+      @key == other.key && @values == other.values
     end
   end
 
@@ -185,6 +213,10 @@ module StrictYAML
     def to_object : Any::Type
       nil
     end
+
+    def ==(other : DocumentStart) : Bool
+      true
+    end
   end
 
   class DocumentEnd < Node
@@ -194,6 +226,10 @@ module StrictYAML
 
     def to_object : Any::Type
       nil
+    end
+
+    def ==(other : DocumentEnd) : Bool
+      true
     end
   end
 
@@ -211,6 +247,10 @@ module StrictYAML
     def to_object : Any::Type
       nil
     end
+
+    def ==(other : Comment) : Bool
+      @value == other.value
+    end
   end
 
   class Directive < Node
@@ -226,6 +266,10 @@ module StrictYAML
 
     def to_object : Any::Type
       nil
+    end
+
+    def ==(other : Directive) : Bool
+      @value == other.value
     end
   end
 end
