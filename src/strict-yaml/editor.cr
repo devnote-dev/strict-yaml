@@ -13,7 +13,11 @@ module StrictYAML
     end
 
     def insert(keys : Enumerable(KeyType), value : ValueType) : Nil
-      root = lookup keys[...-1]
+      if keys.size == 1
+        root = lookup keys
+      else
+        root = lookup keys[...-1]
+      end
 
       case root
       when Mapping
@@ -24,9 +28,16 @@ module StrictYAML
       when List
         key = keys[-1]
         raise "cannot index a list value with a string key" unless key.is_a?(Int32)
-        return if root.values.size <= key
 
-        root.values << parse value
+        if node = root.values[key]?
+          unless node.is_a?(List)
+            raise "cannot index a scalar or mapping value with a number"
+          end
+
+          node.values << parse value
+        else
+          root.values << parse value
+        end
       end
     end
 
