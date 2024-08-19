@@ -8,11 +8,11 @@ module StrictYAML
     def initialize(@document : Document)
     end
 
-    def insert(key : KeyType, value : ValueType) : Nil
-      insert [key], value
+    def update(key : KeyType, value : ValueType) : Nil
+      update [key], value
     end
 
-    def insert(keys : Enumerable(KeyType), value : ValueType) : Nil
+    def update(keys : Enumerable(KeyType), value : ValueType) : Nil
       if keys.size == 1
         root = lookup keys
       else
@@ -22,9 +22,11 @@ module StrictYAML
       case root
       when Mapping
         key = parse keys[-1]
-        return if root.values.select(Mapping).find { |m| m.key == key }
-
-        root.values << Mapping.new key, [parse value] of Node
+        if node = root.values.select(Mapping).find { |m| m.key == key }
+          node.values.replace [parse value]
+        else
+          root.values << Mapping.new key, [parse value] of Node
+        end
       when List
         key = keys[-1]
         raise "cannot index a list value with a string key" unless key.is_a?(Int32)
@@ -34,12 +36,15 @@ module StrictYAML
             raise "cannot index a scalar or mapping value with a number"
           end
 
-          node.values << parse value
+          node.values.replace [parse value]
         else
           root.values << parse value
         end
       end
     end
+
+    # def replace(keys : Enumerable(KeyType), value : ValueType) : Nil
+    # def remove(keys : Enumerable(KeyType)) : Nil
 
     private def lookup(keys : Array(KeyType), root : Array(Node) = document.nodes) : Node
       raise "cannot index a scalar document" if document.core_type.scalar?
