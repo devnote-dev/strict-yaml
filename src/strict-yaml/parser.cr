@@ -125,11 +125,13 @@ module StrictYAML
           end
         end
 
-        document.core_type = case root
-                             when Mapping then Document::CoreType::Mapping
-                             when List    then Document::CoreType::List
-                             else              Document::CoreType::Scalar
-                             end
+        if root == Mapping
+          document.core_type = :mapping
+        elsif root == List
+          document.core_type = :list
+        else
+          document.core_type = :scalar
+        end
       end
 
       Stream.new documents, @errors
