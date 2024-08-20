@@ -389,8 +389,8 @@ module StrictYAML
 
     # TODO: rework comments back into lists
     private def parse_list(token : Token) : Node
-      start = token.loc
       expect_next :space
+      start = token.loc
       values = [] of Node
       has_value = false
 
@@ -405,10 +405,30 @@ module StrictYAML
           next_token
         when .newline?
           values << Newline.new current_token if @include_newlines
-          break current_token.loc if has_value
+          values << Null.new current_token.loc unless has_value
 
-          values << Null.new current_token.loc
-          break current_token.loc
+          break current_token.loc unless peek_token.kind.space?
+          break current_token.loc if peek_token.value.size < @list_indent
+
+          @list_indent = next_token.value.size
+          expect_next :list
+
+          loop do
+            case current_token.kind
+            when .space?
+              break if current_token.value.size < @list_indent
+
+              @list_indent = current_token.value.size
+              next_token
+            when .list?
+              node = parse_list(current_token).as(List)
+              values.concat node.values
+            when .comment?
+              next_token
+            else
+              break
+            end
+          end
         else
           node = parse_next_node || Null.new current_token.loc
           values << node
