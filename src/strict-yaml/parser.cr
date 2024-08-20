@@ -21,6 +21,7 @@ module StrictYAML
 
     @pos : Int32
     @map_indent : Int32
+    @list_indent : Int32
 
     def self.parse(tokens : Array(Token), *, allow_invalid : Bool = false,
                    include_spaces : Bool = false, include_newlines : Bool = false,
@@ -38,8 +39,7 @@ module StrictYAML
     private def initialize(@tokens : Array(Token), @allow_invalid : Bool, @include_spaces : Bool,
                            @include_newlines : Bool, @parse_scalars : Bool,
                            @sensitive_scalars : Bool)
-      @pos = 0
-      @map_indent = 0
+      @pos = @map_indent = @list_indent = 0
       @errors = [] of Error
     end
 
@@ -164,7 +164,11 @@ module StrictYAML
       in .fold?, .fold_keep?, .fold_strip?
         parse_folding_scalar current_token
       in .list?
-        parse_list current_token
+        if peek_token.kind.space?
+          parse_list current_token
+        else
+          parse_scalar_or_mapping current_token
+        end
       in .document_start?
         advance { DocumentStart.new current_token.loc }
       in .document_end?
@@ -383,35 +387,36 @@ module StrictYAML
       Scalar.new(token.loc & last.loc, value, comments)
     end
 
+    # TODO: rework comments back into lists
     private def parse_list(token : Token) : Node
       start = token.loc
+      expect_next :space
       values = [] of Node
-      comments = [] of Comment
+      has_value = false
 
+      next_token
       last = loop do
-        case token.kind
-        when .list?
+        case current_token.kind
+        when .eof?
+          values << Null.new current_token.loc unless has_value
+          break current_token.loc
+        when .space?
+          values << Space.new current_token if @include_spaces
           next_token
-          loop do
-            break unless node = parse_next_node
+        when .newline?
+          values << Newline.new current_token if @include_newlines
+          break current_token.loc if has_value
 
-            values << node
-            token = current_token
-            break if token.kind.newline?
-          end
-        when .comment?
-          comments << Comment.new token.loc, token.value
-          token = next_token
-        when .space?, .newline?
-          token = next_token
-          next
+          values << Null.new current_token.loc
+          break current_token.loc
         else
-          @pos -= 1 unless token.kind.eof?
-          break token
+          node = parse_next_node || Null.new current_token.loc
+          values << node
+          has_value = true
         end
       end
 
-      List.new(start & last.loc, values, comments)
+      List.new(start & last, values, [] of Comment)
     end
 
     private def parse_comment(token : Token) : Node
