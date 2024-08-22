@@ -53,6 +53,10 @@ module StrictYAML
   class Space < Node
     property value : String
 
+    def self.new(value : String)
+      new Location[0, 0], value
+    end
+
     def self.new(token : Token)
       new token.loc, token.value
     end
@@ -72,6 +76,10 @@ module StrictYAML
 
   class Newline < Node
     property value : String
+
+    def self.new(value : String)
+      new Location[0, 0], value
+    end
 
     def self.new(token : Token)
       new token.loc, token.value
