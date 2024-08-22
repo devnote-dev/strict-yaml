@@ -88,19 +88,7 @@ module StrictYAML
       @io << " " * @indent unless @indent == 0
     end
 
-    private def write(node : Space) : Nil
-      @io << node.value
-    end
-
-    private def write(node : Newline) : Nil
-      @io << node.value
-    end
-
-    private def write(node : Scalar) : Nil
-      @io << node.value
-    end
-
-    private def write(node : Boolean) : Nil
+    private def write(node : Space | Newline | Scalar | Boolean) : Nil
       @io << node.value
     end
 
@@ -112,48 +100,30 @@ module StrictYAML
       write node.key
       @io << ':'
 
-      if node.values.size == 1
-        if node.values[0].is_a?(List)
-          @io << '\n'
-          write node.values[0]
-        else
-          @io << ' '
-          write node.values[0]
-          @io << '\n'
-        end
-      else
-        @io << '\n'
-        @indent += 1
-
-        node.values.each do |value|
-          check_indent
-          write value
-        end
-
-        @indent -= 1
-        @io << '\n'
+      node.values.each do |value|
+        check_indent
+        write value
       end
     end
 
     private def write(node : List) : Nil
-      @indent += 1
+      @indent += 2
 
       node.values.each do |value|
         check_indent
         @io << "- "
         write value
-        @io << '\n'
       end
 
-      @indent -= 1
+      @indent -= 2
     end
 
     private def write(node : DocumentStart) : Nil
-      @io << "---\n"
+      @io << "---"
     end
 
     private def write(node : DocumentEnd) : Nil
-      @io << "...\n"
+      @io << "..."
     end
 
     private def write(node : Comment) : Nil
@@ -165,9 +135,6 @@ module StrictYAML
 
     private def write(node : Directive) : Nil
       @io << '%' << node.value
-    end
-
-    private def write(node : Node) : Nil
     end
   end
 end
