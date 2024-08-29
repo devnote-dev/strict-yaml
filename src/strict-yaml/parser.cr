@@ -12,8 +12,7 @@ module StrictYAML
 
   class Parser
     @allow_invalid : Bool
-    @include_spaces : Bool
-    @include_newlines : Bool
+    @preserve : Bool
     @parse_scalars : Bool
     @sensitive_scalars : Bool
     @errors : Array(Error)
@@ -24,21 +23,19 @@ module StrictYAML
     @list_indent : Int32
 
     def self.parse(tokens : Array(Token), *, allow_invalid : Bool = false,
-                   include_spaces : Bool = false, include_newlines : Bool = false,
-                   parse_scalars : Bool = true, sensitive_scalars : Bool = false) : Stream
+                   preserve : Bool = false, parse_scalars : Bool = true,
+                   sensitive_scalars : Bool = false) : Stream
       new(
         tokens,
         allow_invalid,
-        include_spaces,
-        include_newlines,
+        preserve,
         parse_scalars,
         sensitive_scalars
       ).parse
     end
 
-    private def initialize(@tokens : Array(Token), @allow_invalid : Bool, @include_spaces : Bool,
-                           @include_newlines : Bool, @parse_scalars : Bool,
-                           @sensitive_scalars : Bool)
+    private def initialize(@tokens : Array(Token), @allow_invalid : Bool, @preserve : Bool,
+                           @parse_scalars : Bool, @sensitive_scalars : Bool)
       @pos = @map_indent = @list_indent = 0
       @errors = [] of Error
     end
@@ -142,14 +139,14 @@ module StrictYAML
       in .eof?
         nil
       in .space?
-        if @include_spaces
+        if @preserve
           advance { Space.new current_token }
         else
           next_token
           parse_next_node
         end
       in .newline?
-        if @include_newlines
+        if @preserve
           advance { Newline.new current_token }
         else
           next_token
@@ -281,10 +278,10 @@ module StrictYAML
           values << Null.new current_token.loc
           break current_token.loc
         when .space?
-          values << Space.new current_token if @include_spaces
+          values << Space.new current_token if @preserve
           next_token
         when .newline?
-          values << Newline.new current_token if @include_newlines
+          values << Newline.new current_token if @preserve
 
           case (inner = next_token).kind
           when .space?
@@ -401,10 +398,10 @@ module StrictYAML
           values << Null.new current_token.loc unless has_value
           break current_token.loc
         when .space?
-          values << Space.new current_token if @include_spaces
+          values << Space.new current_token if @preserve
           next_token
         when .newline?
-          values << Newline.new current_token if @include_newlines
+          values << Newline.new current_token if @preserve
           values << Null.new current_token.loc unless has_value
 
           break current_token.loc unless peek_token.kind.space?
