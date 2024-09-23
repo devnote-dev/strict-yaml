@@ -77,10 +77,36 @@ module StrictYAML
       with builder yield builder
 
       nodes = builder.@nodes
-      raise "invalid key-value mapping pairs" unless nodes.size % 2 == 0
+      key : Node? = nil
+      i = 0
 
-      nodes.in_groups_of(2).each do |(key, value)|
-        @nodes << Mapping.new key.as(Node), [value.as(Node)]
+      loop do
+        case node = nodes[i]?
+        when Nil, Directive, DocumentStart, DocumentEnd
+          if key
+            raise "invalid key-value mapping pairs"
+          end
+          break
+        when Newline, Comment
+          @nodes << node
+          i += 1
+        else
+          if key
+            if node.is_a?(Mapping) || node.is_a?(List)
+              @nodes << Mapping.new key, [node]
+            else
+              @nodes << Mapping.new key, [Space.new(" "), node]
+
+              if nodes[i + 1]?.as?(Newline)
+                i += 1
+              end
+            end
+            key = nil
+          else
+            key = node
+          end
+          i += 1
+        end
       end
     end
 
@@ -130,15 +156,10 @@ module StrictYAML
     end
 
     private def write(node : List) : Nil
-      @indent += 2
-
       node.values.each do |value|
-        check_indent
-        @io << "- "
+        @io << "- " unless value.is_a?(Newline)
         write value
       end
-
-      @indent -= 2
     end
 
     private def write(node : DocumentStart) : Nil
