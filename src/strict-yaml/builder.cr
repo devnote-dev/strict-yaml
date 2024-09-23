@@ -20,33 +20,56 @@ module StrictYAML
     @nodes : Array(Node)
     @indent : Int32
 
+    def self.build(& : Builder -> _) : String
+      String.build do |io|
+        build io
+      end
+    end
+
+    def self.build(io : IO, & : Builder -> _) : Nil
+      builder = new io
+      with builder yield builder
+      builder.close
+    end
+
     def initialize(@io : IO, @nodes : Array(Node) = [] of Node)
       @type = :none
       @indent = 0
     end
 
     def directive(value : String) : Nil
-      @nodes << Directive.new value
+      @nodes << Directive.new(value) << Newline.new("\n")
+    end
+
+    def document(directive value : String? = nil, & : Builder -> _) : Nil
+      directive value if value
+      document_start
+
+      builder = Builder.new NullWriter.new
+      with builder yield builder
+
+      @nodes.concat builder.@nodes
+      document_end
     end
 
     def document_start : Nil
-      @nodes << DocumentStart.new << Newline.new "\n"
+      @nodes << DocumentStart.empty << Newline.new("\n")
     end
 
     def document_end : Nil
-      @nodes << DocumentEnd.new << Newline.new "\n"
+      @nodes << DocumentEnd.empty << Newline.new("\n")
     end
 
     def scalar(value : _) : Nil
-      @nodes << Scalar.new value.to_s
+      @nodes << Scalar.new(value.to_s) << Newline.new("\n")
     end
 
     def boolean(value : Bool) : Nil
-      @nodes << Boolean.new value
+      @nodes << Boolean.new(value) << Newline.new("\n")
     end
 
     def null : Nil
-      @nodes << Null.empty
+      @nodes << Null.empty << Newline.new("\n")
     end
 
     def mapping(& : Builder -> _) : Nil
@@ -65,19 +88,19 @@ module StrictYAML
       builder = Builder.new NullWriter.new
       with builder yield builder
 
-      @nodes << List.new builder.@nodes
+      @nodes << List.new(builder.@nodes) << Newline.new("\n")
     end
 
     def comment(value : String) : Nil
-      @nodes << Comment.new value
+      @nodes << Comment.new(value) << Newline.new("\n")
     end
 
     def newline : Nil
       @nodes << Newline.new "\n"
     end
 
-    def build : Nil
-      Formatter.new(@nodes).format.each do |node|
+    def close : Nil
+      @nodes.each do |node|
         check_indent
         write node
       end
@@ -135,110 +158,6 @@ module StrictYAML
 
     private def write(node : Directive) : Nil
       @io << '%' << node.value
-    end
-
-    private class Formatter
-      @source : Array(Node)
-      @pos : Int32
-
-      def initialize(@source : Array(Node))
-        @pos = 0
-      end
-
-      def format : Array(Node)
-        nodes = [] of Node
-
-        while @pos < @source.size
-          # case value = format current_node
-          # when Array
-          #   nodes.concat value
-          # else
-          #   node << value
-          # end
-          nodes << format current_node
-        end
-
-        nodes
-      end
-
-      private def current_node : Node
-        @source[@pos]
-      end
-
-      private def peek_node : Node
-        @source[@pos + 1]
-      end
-
-      private def next_node : Node
-        @source[@pos += 1]
-      end
-
-      # private def format(node : Space | Newline | Scalar | Boolean | Null) : Node
-      #   node
-      # end
-
-      private def format(node : Mapping) : Node
-        iter = node.values.each
-        formatted = [] of Node
-
-        loop do
-          case value = tap iter.next
-          when Iterator::Stop
-            unless formatted[-1].is_a?(Newline)
-              formatted << Newline.new "\n"
-            end
-            break
-          when Space
-            formatted << value
-          when Newline
-            formatted << value
-            # pp! formatted
-            # if peek = iter.next.as?(Node)
-            #   if peek.is_a?(Space)
-            #     formatted << peek
-            #   else
-            #     formatted << Space.new("  ") << peek
-            #   end
-            #   iter.next
-            # end
-          when Scalar | Boolean | Null
-            unless formatted[-1].is_a?(Space)
-              formatted << Space.new " "
-            end
-
-            formatted << value
-          when Mapping
-            unless formatted[-2].is_a?(Newline)
-              formatted << Newline.new "\n"
-            end
-
-            unless formatted[-1].is_a?(Space)
-              formatted << Space.new "  "
-            end
-
-            formatted << format value
-          when List
-            unless formatted[-2].is_a?(Newline)
-              formatted << Newline.new "\n"
-            end
-
-            unless formatted[-1].is_a?(Space)
-              formatted << Space.new "  "
-            end
-
-            formatted << format value
-          end
-        end
-
-        node.values = formatted
-
-        node
-      end
-
-      # TODO
-      private def format(node : Node) : Node
-        node
-      end
     end
   end
 end
