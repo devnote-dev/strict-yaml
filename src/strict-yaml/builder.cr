@@ -32,9 +32,8 @@ module StrictYAML
       builder.close
     end
 
-    def initialize(@io : IO, @nodes : Array(Node) = [] of Node)
+    def initialize(@io : IO, @indent : Int32 = 0, @nodes : Array(Node) = [] of Node)
       @type = :none
-      @indent = 0
     end
 
     def directive(value : String) : Nil
@@ -73,7 +72,8 @@ module StrictYAML
     end
 
     def mapping(& : Builder -> _) : Nil
-      builder = Builder.new NullWriter.new
+      check_indent
+      builder = Builder.new NullWriter.new, @indent + 2
       with builder yield builder
 
       nodes = builder.@nodes
@@ -87,13 +87,13 @@ module StrictYAML
             raise "invalid key-value mapping pairs"
           end
           break
-        when Newline, Comment
+        when Space, Newline, Comment
           @nodes << node
           i += 1
         else
           if key
             if node.is_a?(Mapping) || node.is_a?(List)
-              @nodes << Mapping.new key, [node]
+              @nodes << Mapping.new key, [Newline.new("\n"), node]
             else
               @nodes << Mapping.new key, [Space.new(" "), node]
 
@@ -111,13 +111,15 @@ module StrictYAML
     end
 
     def list(& : Builder -> _) : Nil
-      builder = Builder.new NullWriter.new
+      check_indent
+      builder = Builder.new NullWriter.new, @indent + 2
       with builder yield builder
 
       @nodes << List.new(builder.@nodes) << Newline.new("\n")
     end
 
     def comment(value : String) : Nil
+      check_indent
       @nodes << Comment.new(value) << Newline.new("\n")
     end
 
@@ -127,14 +129,15 @@ module StrictYAML
 
     def close : Nil
       @nodes.each do |node|
-        check_indent
         write node
       end
       @io.flush
     end
 
     private def check_indent : Nil
-      @io << " " * @indent unless @indent == 0
+      unless @indent == 0
+        @nodes << Space.new " " * @indent
+      end
     end
 
     private def write(node : Space | Newline | Scalar | Boolean) : Nil
@@ -150,7 +153,7 @@ module StrictYAML
       @io << ':'
 
       node.values.each do |value|
-        check_indent
+        # check_indent
         write value
       end
     end
@@ -171,7 +174,7 @@ module StrictYAML
     end
 
     private def write(node : Comment) : Nil
-      check_indent
+      # check_indent
       node.value.each_line do |line|
         @io << "# " << line << '\n'
       end
