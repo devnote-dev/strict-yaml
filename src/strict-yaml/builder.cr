@@ -1,12 +1,5 @@
 module StrictYAML
   class Builder
-    private enum CoreType
-      None
-      Scalar
-      Mapping
-      List
-    end
-
     private class NullWriter < IO
       def read(slice : Bytes) : Nil
       end
@@ -16,9 +9,8 @@ module StrictYAML
     end
 
     @io : IO
-    @type : CoreType
-    @nodes : Array(Node)
     @indent : Int32
+    @nodes : Array(Node)
 
     def self.build(& : Builder -> _) : String
       String.build do |io|
@@ -33,7 +25,6 @@ module StrictYAML
     end
 
     def initialize(@io : IO, @indent : Int32 = 0, @nodes : Array(Node) = [] of Node)
-      @type = :none
     end
 
     def directive(value : String) : Nil
