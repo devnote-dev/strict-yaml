@@ -95,6 +95,9 @@ module StrictYAML
             key = nil
           else
             key = node
+            if nodes[i + 1]?.as?(Newline)
+              i += 1
+            end
           end
           i += 1
         end
