@@ -69,6 +69,7 @@ module StrictYAML
 
       nodes = builder.@nodes
       key : Node? = nil
+      values = [] of Node
       i = 0
 
       loop do
@@ -78,21 +79,27 @@ module StrictYAML
             raise "invalid key-value mapping pairs"
           end
           break
-        when Space, Newline, Comment
+        when Space
+          values << node
+          i += 1
+        when Newline, Comment
           @nodes << node
           i += 1
         else
           if key
             if node.is_a?(Mapping) || node.is_a?(List)
-              @nodes << Mapping.new key, [Newline.new("\n"), node]
+              values.unshift Newline.new "\n"
+              @nodes << Mapping.new key, values << node
             else
-              @nodes << Mapping.new key, [Space.new(" "), node]
+              values.unshift Space.new " "
+              @nodes << Mapping.new key, values << node
 
               if nodes[i + 1]?.as?(Newline)
                 i += 1
               end
             end
             key = nil
+            values = [] of Node
           else
             key = node
             if nodes[i + 1]?.as?(Newline)
