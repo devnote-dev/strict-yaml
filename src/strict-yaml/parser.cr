@@ -115,7 +115,7 @@ module StrictYAML
         document.nodes.each do |node|
           next if node.class == root
           case node
-          when Comment, Directive, DocumentStart, DocumentEnd
+          when Space, Newline, Comment, Directive, DocumentStart, DocumentEnd
             next
           else
             raise "#{node.class} value is not allowed in this context", node.loc
@@ -253,6 +253,7 @@ module StrictYAML
         end
       end
 
+      # FIXME: this coerces all SCALARS to lowercase even when it's not "true"/"false"
       if @parse_scalars
         value = value.downcase unless @sensitive_scalars
         if value == "true" || value == "false"
@@ -288,6 +289,7 @@ module StrictYAML
             break inner.loc if inner.value.size < @map_indent
 
             @map_indent = inner.value.size
+            values << Space.new inner if @preserve
             next_token
             values << (node = parse_next_node.as(Node))
 
@@ -298,7 +300,7 @@ module StrictYAML
             break node.loc
           when .string?
             if peek_token.kind.colon?
-              values << Null.new inner.loc
+              values << Null.new inner.loc if values.empty?
               break inner.loc
             else
               raise "string value is not allowed in this context", peek_token.loc
