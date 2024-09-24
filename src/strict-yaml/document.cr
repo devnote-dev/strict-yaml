@@ -63,5 +63,9 @@ module StrictYAML
         Any.new values[0].to_object
       end
     end
+
+    def to_s(io : IO) : Nil
+      Builder.new(io, nodes: @nodes).close
+    end
   end
 end

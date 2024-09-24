@@ -24,6 +24,7 @@ module StrictYAML
       builder.close
     end
 
+    # :nodoc:
     def initialize(@io : IO, @indent : Int32 = 0, @nodes : Array(Node) = [] of Node)
     end
 
@@ -154,7 +155,6 @@ module StrictYAML
       @io << ':'
 
       node.values.each do |value|
-        # check_indent
         write value
       end
     end
@@ -175,7 +175,6 @@ module StrictYAML
     end
 
     private def write(node : Comment) : Nil
-      # check_indent
       node.value.each_line do |line|
         @io << "# " << line << '\n'
       end
