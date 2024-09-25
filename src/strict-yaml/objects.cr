@@ -16,6 +16,7 @@ class Object
   def to_yaml(io : IO) : Nil
     builder = StrictYAML::Builder.new io
     to_yaml builder
+    builder.close
   end
 end
 
@@ -105,8 +106,8 @@ class Array(T)
   end
 
   def to_yaml(yaml : StrictYAML::Builder) : Nil
-    yaml.list do
-      each &.to_yaml yaml
+    yaml.list do |list|
+      each &.to_yaml list
     end
   end
 end
@@ -121,8 +122,8 @@ class Deque(T)
   end
 
   def to_yaml(yaml : StrictYAML::Builder) : Nil
-    yaml.list do
-      each &.to_yaml yaml
+    yaml.list do |list|
+      each &.to_yaml list
     end
   end
 end
@@ -137,8 +138,8 @@ struct Set(T)
   end
 
   def to_yaml(yaml : StrictYAML::Builder) : Nil
-    yaml.list do
-      each &.to_yaml yaml
+    yaml.list do |list|
+      each &.to_yaml list
     end
   end
 end
@@ -156,8 +157,8 @@ struct Tuple(*T)
   end
 
   def to_yaml(yaml : StrictYAML::Builder) : Nil
-    yaml.list do
-      each &.to_yaml yaml
+    yaml.list do |list|
+      each &.to_yaml list
     end
   end
 end
@@ -172,8 +173,12 @@ class Hash(K, V)
   end
 
   def to_yaml(yaml : StrictYAML::Builder) : Nil
-    each do |key, value|
-      yaml.mapping key, value
+    yaml.mapping do |m|
+      each do |key, value|
+        m.scalar key
+        m.scalar value
+        m.newline
+      end
     end
   end
 end
@@ -217,8 +222,12 @@ struct NamedTuple
   end
 
   def to_yaml(yaml : StrictYAML::Builder) : Nil
-    each do |key, value|
-      yaml.mapping key, value
+    yaml.mapping do |m|
+      each do |key, value|
+        m.scalar key
+        m.scalar value
+        m.newline
+      end
     end
   end
 end
