@@ -253,19 +253,23 @@ module StrictYAML
         end
       end
 
-      # FIXME: this coerces all SCALARS to lowercase even when it's not "true"/"false"
       if @parse_scalars
-        value = value.downcase unless @sensitive_scalars
-        if value == "true" || value == "false"
-          Boolean.new(token.loc & last.loc, value == "true")
-        elsif value == "null"
-          Null.new(token.loc & last.loc)
+        if @sensitive_scalars
+          if value.downcase.in?("true", "false")
+            return Boolean.new(token.loc & last.loc, value.downcase == "true")
+          elsif value.downcase == "null"
+            return Null.new(token.loc & last.loc)
+          end
         else
-          Scalar.new(token.loc & last.loc, value)
+          if value == "true" || value == "false"
+            return Boolean.new(token.loc & last.loc, value == "true")
+          elsif value == "null"
+            return Null.new(token.loc & last.loc)
+          end
         end
-      else
-        Scalar.new(token.loc & last.loc, value)
       end
+
+      Scalar.new(token.loc & last.loc, value)
     end
 
     private def parse_mapping(token : Token) : Node
