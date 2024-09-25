@@ -8,6 +8,8 @@ module StrictYAML
       end
     end
 
+    private NULL = NullWriter.new
+
     @io : IO
     @indent : Int32
     @nodes : Array(Node)
@@ -36,7 +38,7 @@ module StrictYAML
       directive value if value
       document_start
 
-      builder = Builder.new NullWriter.new
+      builder = Builder.new NULL
       with builder yield builder
 
       @nodes.concat builder.@nodes
@@ -65,7 +67,7 @@ module StrictYAML
 
     def mapping(& : Builder -> _) : Nil
       check_indent
-      builder = Builder.new NullWriter.new, @indent + 2
+      builder = Builder.new NULL, @indent + 2
       with builder yield builder
 
       nodes = builder.@nodes
@@ -114,7 +116,7 @@ module StrictYAML
 
     def list(& : Builder -> _) : Nil
       # check_indent
-      builder = Builder.new NullWriter.new, @indent + 2
+      builder = Builder.new NULL, @indent + 2
       with builder yield builder
 
       nodes = builder.@nodes.flat_map { |n| [Space.new(" "), n] }
