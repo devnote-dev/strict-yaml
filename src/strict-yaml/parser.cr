@@ -386,11 +386,12 @@ module StrictYAML
       Scalar.new(token.loc & last.loc, value, comments)
     end
 
-    # TODO: rework comments back into lists
     private def parse_list(token : Token) : Node
       expect_next :space
-      start = token.loc
       values = [] of Node
+      values << Space.new current_token if @preserve
+
+      start = token.loc
       has_value = false
 
       next_token
