@@ -75,12 +75,13 @@ module StrictYAML
 
     def to_yaml(yaml : StrictYAML::Builder) : Nil
       {% begin %}
-        {% props = {} of Nil => Nil %}
-        yaml.mapping :map, {{ @type.name.stringify }} do
+        yaml.mapping do |m|
           {% for ivar in @type.instance_vars %}
-            {% anno = ivar.annotation(StrictYAML::Field) %}
+            {% anno = ivar.annotation(::StrictYAML::Field) %}
             {% unless anno && (anno[:ignore] || anno[:ignore_serialize]) %}
-              yaml.mapping {{ ivar.name.stringify }}, @{{ ivar.id }}
+              m.scalar {{ivar.name.stringify}}
+              m.scalar {{ivar}}
+              m.newline
             {% end %}
           {% end %}
         end
