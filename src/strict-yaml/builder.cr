@@ -12,9 +12,9 @@ module StrictYAML
     @indent : Int32
     @nodes : Array(Node)
 
-    def self.build(& : Builder -> _) : String
+    def self.build(&block : Builder -> _) : String
       String.build do |io|
-        build io
+        build(io, &block)
       end
     end
 
@@ -113,11 +113,12 @@ module StrictYAML
     end
 
     def list(& : Builder -> _) : Nil
-      check_indent
+      # check_indent
       builder = Builder.new NullWriter.new, @indent + 2
       with builder yield builder
 
-      @nodes << List.new(builder.@nodes) << Newline.new("\n")
+      nodes = builder.@nodes.flat_map { |n| [Space.new(" "), n] }
+      @nodes << List.new nodes
     end
 
     def comment(value : String) : Nil
@@ -160,9 +161,19 @@ module StrictYAML
     end
 
     private def write(node : List) : Nil
-      node.values.each do |value|
-        @io << "- " unless value.is_a?(Newline)
-        write value
+      @io << '-'
+      i = 0
+      loop do
+        case inner = node.values[i]?
+        when Nil
+          break
+        when Newline
+          write inner
+          @io << '-' if node.values[i += 1]?
+        else
+          write inner
+          i += 1
+        end
       end
     end
 
