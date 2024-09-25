@@ -411,7 +411,7 @@ module StrictYAML
           values << Newline.new current_token if @preserve
           values << Null.new current_token.loc unless has_value
 
-          break current_token.loc unless peek_token.kind.space?
+          break advance { current_token.loc } unless peek_token.kind.space?
           break current_token.loc if peek_token.value.size < @list_indent
 
           @list_indent = next_token.value.size
