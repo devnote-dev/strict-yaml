@@ -1,7 +1,7 @@
 module StrictYAML
   class Editor
     alias KeyType = String | Symbol | Int32
-    alias ValueType = KeyType | Nil | Array(KeyType) | Hash(KeyType, ValueType)
+    alias ValueType = KeyType | Nil | Array(ValueType) | Hash(KeyType, ValueType)
 
     getter document : Document
 
@@ -23,9 +23,10 @@ module StrictYAML
       when Mapping
         key = parse keys[-1]
         if node = root.values.select(Mapping).find { |m| m.key == key }
-          node.values.replace [parse value]
+          node.values.replace [Space.new(" "), parse value]
         else
-          root.values << Mapping.new key, [parse value] of Node
+          # TODO: needs to check if preserved whitespace
+          root.values << Newline.new("\n") << Mapping.new(key, [parse value] of Node)
         end
       when List
         key = keys[-1]
