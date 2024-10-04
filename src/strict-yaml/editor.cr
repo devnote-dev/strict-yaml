@@ -79,7 +79,43 @@ module StrictYAML
       end
     end
 
-    # def remove(keys : Enumerable(KeyType)) : Nil
+    def remove(key : KeyType) : Nil
+      remove [key]
+    end
+
+    def remove(keys : Enumerable(KeyType)) : Nil
+      if keys.size == 1
+        root = lookup keys
+      else
+        root = lookup keys[...-1]
+      end
+
+      case root
+      when Mapping
+        key = parse keys[-1]
+
+        unless node = root.values.select(Mapping).find { |m| m.key == key }
+          raise "key '#{keys.join '.'}' not found"
+        end
+
+        root.values.delete node
+        root.values.pop if root.values[-1].is_a?(Space)
+        root.values.pop if root.values[-1].is_a?(Newline)
+      when List
+        key = keys[-1]
+        raise "cannot index a list value with a string key" unless key.is_a?(Int32)
+
+        unless node = root.values[key]?
+          raise "key '#{keys.join '.'}' not found"
+        end
+
+        # unless node.is_a?(List)
+        #   raise "cannot index a scalar or mapping value with a number"
+        # end
+
+        node.values.delete_at key
+      end
+    end
 
     private def lookup(keys : Array(KeyType), root : Array(Node) = document.nodes) : Node
       raise "cannot index a scalar document" if document.core_type.scalar?
