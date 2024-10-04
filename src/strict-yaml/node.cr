@@ -211,6 +211,10 @@ module StrictYAML
     def to_object : Any::Type
       @values.map { |n| Any.new n.to_object }
     end
+
+    def ==(other : List) : Bool
+      @values == other.values
+    end
   end
 
   class DocumentStart < Node

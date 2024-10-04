@@ -15,9 +15,9 @@ module StrictYAML
 
     def insert(keys : Enumerable(KeyType), value : ValueType) : Nil
       if keys.size == 1
-        root = lookup keys
+        root = lookup keys, insert: true
       else
-        root = lookup keys[...-1]
+        root = lookup keys[...-1], insert: true
       end
 
       case root
@@ -38,7 +38,7 @@ module StrictYAML
           root.values << Mapping.new(key, [Space.new(" "), parse value])
         end
       when List
-        root.values << parse value
+        root.values << (parse value) << Newline.new("\n")
       end
     end
 
@@ -70,7 +70,6 @@ module StrictYAML
           raise "key '#{keys.join '.'}' not found"
         end
 
-        # TODO: is this necessary?
         unless node.is_a?(List)
           raise "cannot index a scalar or mapping value with a number"
         end
@@ -105,19 +104,26 @@ module StrictYAML
         key = keys[-1]
         raise "cannot index a list value with a string key" unless key.is_a?(Int32)
 
+        if keys.size == 1
+          document.nodes.delete root
+          return
+        end
+
+        root = lookup keys[...-2]
+        unless root.is_a?(List)
+          raise "cannot index a scalar or mapping value with a number"
+        end
+
         unless node = root.values[key]?
           raise "key '#{keys.join '.'}' not found"
         end
 
-        # unless node.is_a?(List)
-        #   raise "cannot index a scalar or mapping value with a number"
-        # end
-
-        node.values.delete_at key
+        root.values.delete node
       end
     end
 
-    private def lookup(keys : Array(KeyType), root : Array(Node) = document.nodes) : Node
+    private def lookup(keys : Array(KeyType), root : Array(Node) = document.nodes,
+                       insert : Bool = false) : Node
       raise "cannot index a scalar document" if document.core_type.scalar?
 
       case key = keys[0]
@@ -131,7 +137,7 @@ module StrictYAML
           return node if keys.size <= 1
 
           keys.shift
-          lookup keys, node.values
+          lookup keys, node.values, insert
         else
           raise "key '#{key.value}' does not exist"
         end
@@ -141,12 +147,24 @@ module StrictYAML
         end
 
         if node = root.select(List)[key]?
-          return node if keys.size <= 1
+          if keys.size <= 1
+            if insert
+              root.insert key, list = List.new [Space.new(" ")] of Node
+              return list
+            else
+              return node
+            end
+          end
 
           keys.shift
-          lookup keys, node.values
+          lookup keys, node.values, insert
         else
-          raise "index '#{key}' out of range"
+          if insert
+            root << Newline.new("\n") << (list = List.new [Space.new(" ")] of Node)
+            list
+          else
+            raise "index '#{key}' out of range"
+          end
         end
       end
     end
