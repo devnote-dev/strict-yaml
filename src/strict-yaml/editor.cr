@@ -3,7 +3,7 @@ module StrictYAML
     alias KeyType = String | Symbol | Int32
     alias ValueType = KeyType | Nil | Array(ValueType) | Hash(KeyType, ValueType)
 
-    getter document : Document
+    @document : Document
 
     def initialize(@document : Document)
       raise "cannot edit an unpreserved document" unless document.preserved?
@@ -105,7 +105,7 @@ module StrictYAML
         raise "cannot index a list value with a string key" unless key.is_a?(Int32)
 
         if keys.size == 1
-          document.nodes.delete root
+          @document.nodes.delete root
           return
         end
 
@@ -122,13 +122,13 @@ module StrictYAML
       end
     end
 
-    private def lookup(keys : Array(KeyType), root : Array(Node) = document.nodes,
+    private def lookup(keys : Array(KeyType), root : Array(Node) = @document.nodes,
                        insert : Bool = false) : Node
-      raise "cannot index a scalar document" if document.core_type.scalar?
+      raise "cannot index a scalar document" if @document.core_type.scalar?
 
       case key = keys[0]
       in String, Symbol
-        unless document.core_type.mapping?
+        unless @document.core_type.mapping?
           raise "cannot index a list document with a string key"
         end
 
@@ -142,7 +142,7 @@ module StrictYAML
           raise "key '#{key.value}' does not exist"
         end
       in Int32
-        unless document.core_type.list?
+        unless @document.core_type.list?
           raise "cannot index a mapping with a number"
         end
 

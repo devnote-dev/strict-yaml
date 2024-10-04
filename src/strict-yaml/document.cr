@@ -37,6 +37,10 @@ module StrictYAML
     def core_type=(@core_type : CoreType)
     end
 
+    def edit(& : Editor -> _) : Nil
+      yield Editor.new(self)
+    end
+
     def to_any : Any
       values = @nodes.select do |node|
         case node
