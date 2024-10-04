@@ -9,6 +9,39 @@ module StrictYAML
       raise "cannot edit an unpreserved document" unless document.preserved?
     end
 
+    def insert(key : KeyType, value : ValueType) : Nil
+      insert [key], value
+    end
+
+    def insert(keys : Enumerable(KeyType), value : ValueType) : Nil
+      if keys.size == 1
+        root = lookup keys
+      else
+        root = lookup keys[...-1]
+      end
+
+      case root
+      when Mapping
+        key = parse keys[-1]
+
+        if root.values.select(Mapping).find { |m| m.key == key }
+          raise "key '#{keys.join '.'}' already exists"
+        end
+
+        if keys.size == 1
+          root.values << Newline.new("\n") << Mapping.new(key, [parse value] of Node)
+        else
+          raise "invalid mapping sequence" unless root.values[0].is_a?(Newline)
+
+          space = root.values[1].as?(Space) || raise "invalid mapping indentation"
+          root.values << Newline.new("\n") << space
+          root.values << Mapping.new(key, [Space.new(" "), parse value])
+        end
+      when List
+        root.values << parse value
+      end
+    end
+
     def update(key : KeyType, value : ValueType) : Nil
       update [key], value
     end
@@ -23,36 +56,29 @@ module StrictYAML
       case root
       when Mapping
         key = parse keys[-1]
-        if node = root.values.select(Mapping).find { |m| m.key == key }
-          node.values.replace [Space.new(" "), parse value]
-        else
-          if keys.size == 1
-            root.values << Newline.new("\n") << Mapping.new(key, [parse value] of Node)
-          else
-            raise "invalid mapping sequence" unless root.values[0].is_a?(Newline)
 
-            space = root.values[1].as?(Space) || raise "invalid mapping indentation"
-            root.values << Newline.new("\n") << space
-            root.values << Mapping.new(key, [Space.new(" "), parse value])
-          end
+        unless node = root.values.select(Mapping).find { |m| m.key == key }
+          raise "key '#{keys.join '.'}' not found"
         end
+
+        node.values.replace [Space.new(" "), parse value]
       when List
         key = keys[-1]
         raise "cannot index a list value with a string key" unless key.is_a?(Int32)
 
-        if node = root.values[key]?
-          unless node.is_a?(List)
-            raise "cannot index a scalar or mapping value with a number"
-          end
-
-          node.values.replace [parse value]
-        else
-          root.values << parse value
+        unless node = root.values[key]?
+          raise "key '#{keys.join '.'}' not found"
         end
+
+        # TODO: is this necessary?
+        unless node.is_a?(List)
+          raise "cannot index a scalar or mapping value with a number"
+        end
+
+        node.values.replace [parse value]
       end
     end
 
-    # def replace(keys : Enumerable(KeyType), value : ValueType) : Nil
     # def remove(keys : Enumerable(KeyType)) : Nil
 
     private def lookup(keys : Array(KeyType), root : Array(Node) = document.nodes) : Node
