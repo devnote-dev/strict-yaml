@@ -255,15 +255,15 @@ module StrictYAML
 
       if @parse_scalars
         if @sensitive_scalars
-          if value.downcase.in?("true", "false")
-            return Boolean.new(token.loc & last.loc, value.downcase == "true")
-          elsif value.downcase == "null"
-            return Null.new(token.loc & last.loc)
-          end
-        else
           if value == "true" || value == "false"
             return Boolean.new(token.loc & last.loc, value == "true")
           elsif value == "null"
+            return Null.new(token.loc & last.loc)
+          end
+        else
+          if value.downcase.in?("true", "false")
+            return Boolean.new(token.loc & last.loc, value.downcase == "true")
+          elsif value.downcase == "null"
             return Null.new(token.loc & last.loc)
           end
         end
