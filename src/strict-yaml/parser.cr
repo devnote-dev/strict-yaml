@@ -50,7 +50,7 @@ module StrictYAML
       end
 
       documents = [] of Document
-      doc = Document.new [] of Node
+      doc = Document.new [] of Node, @preserve
       doc_start = false
       iter = nodes.each
 
@@ -80,7 +80,7 @@ module StrictYAML
         when DocumentStart
           if doc_start
             documents << doc
-            doc = Document.new [] of Node
+            doc = Document.new [] of Node, @preserve
           end
 
           doc_start = true
@@ -93,7 +93,7 @@ module StrictYAML
           doc_start = false
           doc.nodes << node
           documents << doc
-          doc = Document.new [] of Node
+          doc = Document.new [] of Node, @preserve
         else
           doc.nodes << node
         end

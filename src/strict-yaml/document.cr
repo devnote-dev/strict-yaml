@@ -9,8 +9,9 @@ module StrictYAML
 
     getter nodes : Array(Node)
     getter core_type : CoreType
+    getter? preserved : Bool
 
-    def initialize(@nodes : Array(Node))
+    def initialize(@nodes : Array(Node), @preserved : Bool)
       @core_type = :invalid
     end
 
