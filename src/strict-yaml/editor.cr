@@ -6,6 +6,7 @@ module StrictYAML
     getter document : Document
 
     def initialize(@document : Document)
+      raise "cannot edit an unpreserved document" unless document.preserved?
     end
 
     def update(key : KeyType, value : ValueType) : Nil
@@ -25,8 +26,15 @@ module StrictYAML
         if node = root.values.select(Mapping).find { |m| m.key == key }
           node.values.replace [Space.new(" "), parse value]
         else
-          # TODO: needs to check if preserved whitespace
-          root.values << Newline.new("\n") << Mapping.new(key, [parse value] of Node)
+          if keys.size == 1
+            root.values << Newline.new("\n") << Mapping.new(key, [parse value] of Node)
+          else
+            raise "invalid mapping sequence" unless root.values[0].is_a?(Newline)
+
+            space = root.values[1].as?(Space) || raise "invalid mapping indentation"
+            root.values << Newline.new("\n") << space
+            root.values << Mapping.new(key, [Space.new(" "), parse value])
+          end
         end
       when List
         key = keys[-1]
