@@ -44,7 +44,7 @@ module StrictYAML
         key = parse key
         if node = nodes.select(Mapping).find { |m| m.key == key }
           if keys.size == 1
-            raise "key '#{key}' already exists in mapping"
+            raise "key '#{key.value}' already exists in mapping"
           else
             keys.shift
             lookup_insert keys, value, node.values, :mapping
@@ -59,7 +59,7 @@ module StrictYAML
 
             nodes << Mapping.new(key, [Space.new(" "), parse value])
           else
-            raise "key '#{key}' not found in mapping"
+            raise "key '#{key.value}' not found in mapping"
           end
         end
       in Int32
@@ -95,7 +95,7 @@ module StrictYAML
             lookup_update keys, value, node.values, :mapping
           end
         else
-          raise "key '#{key}' not found in mapping"
+          raise "key '#{key.value}' not found in mapping"
         end
       in Int32
         raise "cannot index a mapping item with an integer key" unless type.list?
@@ -131,7 +131,7 @@ module StrictYAML
             lookup_remove keys, node.values, :mapping
           end
         else
-          raise "key '#{key}' not found in mapping"
+          raise "key '#{key.value}' not found in mapping"
         end
       in Int32
         raise "cannot index a mapping item with an integer key" unless type.list?
