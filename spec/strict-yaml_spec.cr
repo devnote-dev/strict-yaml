@@ -37,10 +37,10 @@ describe StrictYAML do
     docs[0].nodes[2].should be_a StrictYAML::Mapping
     docs[0].nodes[3].should be_a StrictYAML::DocumentEnd
 
-    docs[1].nodes.size.should eq 3
+    docs[1].nodes.size.should eq 4
     docs[1].nodes[0].should be_a StrictYAML::DocumentStart
     docs[1].nodes[1].should be_a StrictYAML::List
-    docs[1].nodes[1].as(StrictYAML::List).values.size.should eq 2
-    docs[1].nodes[2].should be_a StrictYAML::DocumentEnd
+    docs[1].nodes[2].should be_a StrictYAML::List
+    docs[1].nodes[3].should be_a StrictYAML::DocumentEnd
   end
 end
