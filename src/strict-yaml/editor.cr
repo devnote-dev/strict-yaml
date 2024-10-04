@@ -1,7 +1,7 @@
 module StrictYAML
   class Editor
     alias KeyType = String | Symbol | Int32
-    alias ValueType = KeyType | Nil | Array(ValueType) | Hash(KeyType, ValueType)
+    alias ValueType = KeyType | Bool | Nil | Array(ValueType) | Hash(KeyType, ValueType)
 
     @document : Document
 
@@ -14,32 +14,7 @@ module StrictYAML
     end
 
     def insert(keys : Enumerable(KeyType), value : ValueType) : Nil
-      if keys.size == 1
-        root = lookup keys, insert: true
-      else
-        root = lookup keys[...-1], insert: true
-      end
-
-      case root
-      when Mapping
-        key = parse keys[-1]
-
-        if root.values.select(Mapping).find { |m| m.key == key }
-          raise "key '#{keys.join '.'}' already exists"
-        end
-
-        if keys.size == 1
-          root.values << Newline.new("\n") << Mapping.new(key, [parse value] of Node)
-        else
-          raise "invalid mapping sequence" unless root.values[0].is_a?(Newline)
-
-          space = root.values[1].as?(Space) || raise "invalid mapping indentation"
-          root.values << Newline.new("\n") << space
-          root.values << Mapping.new(key, [Space.new(" "), parse value])
-        end
-      when List
-        root.values << (parse value) << Newline.new("\n")
-      end
+      lookup_insert keys, value, @document.nodes, @document.core_type
     end
 
     def update(key : KeyType, value : ValueType) : Nil
@@ -47,35 +22,7 @@ module StrictYAML
     end
 
     def update(keys : Enumerable(KeyType), value : ValueType) : Nil
-      if keys.size == 1
-        root = lookup keys
-      else
-        root = lookup keys[...-1]
-      end
-
-      case root
-      when Mapping
-        key = parse keys[-1]
-
-        unless node = root.values.select(Mapping).find { |m| m.key == key }
-          raise "key '#{keys.join '.'}' not found"
-        end
-
-        node.values.replace [Space.new(" "), parse value]
-      when List
-        key = keys[-1]
-        raise "cannot index a list value with a string key" unless key.is_a?(Int32)
-
-        unless node = root.values[key]?
-          raise "key '#{keys.join '.'}' not found"
-        end
-
-        unless node.is_a?(List)
-          raise "cannot index a scalar or mapping value with a number"
-        end
-
-        node.values.replace [parse value]
-      end
+      lookup_update keys, value, @document.nodes, @document.core_type
     end
 
     def remove(key : KeyType) : Nil
@@ -83,88 +30,121 @@ module StrictYAML
     end
 
     def remove(keys : Enumerable(KeyType)) : Nil
-      if keys.size == 1
-        root = lookup keys
-      else
-        root = lookup keys[...-1]
-      end
+      lookup_remove keys, @document.nodes, @document.core_type
+    end
 
-      case root
-      when Mapping
-        key = parse keys[-1]
+    private def lookup_insert(keys : Enumerable(KeyType), value : ValueType,
+                              nodes : Array(Node), type : Document::CoreType) : Nil
+      raise "cannot index a scalar document" if type.scalar?
 
-        unless node = root.values.select(Mapping).find { |m| m.key == key }
-          raise "key '#{keys.join '.'}' not found"
+      case key = keys[0]
+      in String, Symbol
+        raise "cannot index a list item with a string key" unless type.mapping?
+
+        key = parse key
+        if node = nodes.select(Mapping).find { |m| m.key == key }
+          if keys.size == 1
+            raise "key '#{key}' already exists in mapping"
+          else
+            keys.shift
+            lookup_insert keys, value, node.values, :mapping
+          end
+        else
+          if keys.size == 1
+            if space = nodes[1]?.as?(Space)
+              nodes << Newline.new("\n") << space
+            else
+              nodes << Newline.new("\n")
+            end
+
+            nodes << Mapping.new(key, [Space.new(" "), parse value])
+          else
+            raise "key '#{key}' not found in mapping"
+          end
         end
+      in Int32
+        raise "cannot index a mapping item with an integer key" unless type.list?
 
-        root.values.delete node
-        root.values.pop if root.values[-1].is_a?(Space)
-        root.values.pop if root.values[-1].is_a?(Newline)
-      when List
-        key = keys[-1]
-        raise "cannot index a list value with a string key" unless key.is_a?(Int32)
-
-        if keys.size == 1
-          @document.nodes.delete root
-          return
+        if node = nodes.select(List)[key]?
+          if keys.size == 1
+            nodes.insert key, List.new [Space.new(" "), (parse value), Newline.new("\n")]
+          else
+            keys.shift
+            lookup_insert keys, value, node.values, :list
+          end
+        else
+          nodes << Newline.new("\n") << List.new [Space.new(" "), (parse value)]
         end
-
-        root = lookup keys[...-2]
-        unless root.is_a?(List)
-          raise "cannot index a scalar or mapping value with a number"
-        end
-
-        unless node = root.values[key]?
-          raise "key '#{keys.join '.'}' not found"
-        end
-
-        root.values.delete node
       end
     end
 
-    private def lookup(keys : Array(KeyType), root : Array(Node) = @document.nodes,
-                       insert : Bool = false) : Node
+    private def lookup_update(keys : Enumerable(KeyType), value : ValueType,
+                              nodes : Array(Node), type : Document::CoreType) : Nil
+      raise "cannot index a scalar document" if type.scalar?
+
+      case key = keys[0]
+      in String, Symbol
+        raise "cannot index a list item with a string key" unless type.mapping?
+
+        key = parse key
+        if node = nodes.select(Mapping).find { |m| m.key == key }
+          if keys.size == 1
+            node.values.replace [Space.new(" "), parse value]
+          else
+            keys.shift
+            lookup_update keys, value, node.values, :mapping
+          end
+        else
+          raise "key '#{key}' not found in mapping"
+        end
+      in Int32
+        raise "cannot index a mapping item with an integer key" unless type.list?
+
+        if node = nodes.select(List)[key]?
+          if keys.size == 1
+            node.values.replace [Space.new(" "), parse value]
+          else
+            keys.shift
+            lookup_update keys, value, node.values, :list
+          end
+        else
+          raise "index '#{key}' out of range for list"
+        end
+      end
+    end
+
+    private def lookup_remove(keys : Enumerable(KeyType), nodes : Array(Node), type : Document::CoreType) : Nil
       raise "cannot index a scalar document" if @document.core_type.scalar?
 
       case key = keys[0]
       in String, Symbol
-        unless @document.core_type.mapping?
-          raise "cannot index a list document with a string key"
-        end
+        raise "cannot index a list item with a string key" unless type.mapping?
 
         key = parse key
-        if node = root.select(Mapping).find { |m| m.key == key }
-          return node if keys.size <= 1
-
-          keys.shift
-          lookup keys, node.values, insert
+        if node = nodes.select(Mapping).find { |m| m.key == key }
+          if keys.size == 1
+            nodes.delete node
+            nodes.pop if nodes[-1].is_a?(Space)
+            nodes.pop if nodes[-1].is_a?(Newline)
+          else
+            keys.shift
+            lookup_remove keys, node.values, :mapping
+          end
         else
-          raise "key '#{key.value}' does not exist"
+          raise "key '#{key}' not found in mapping"
         end
       in Int32
-        unless @document.core_type.list?
-          raise "cannot index a mapping with a number"
-        end
+        raise "cannot index a mapping item with an integer key" unless type.list?
 
-        if node = root.select(List)[key]?
-          if keys.size <= 1
-            if insert
-              root.insert key, list = List.new [Space.new(" ")] of Node
-              return list
-            else
-              return node
-            end
-          end
-
-          keys.shift
-          lookup keys, node.values, insert
-        else
-          if insert
-            root << Newline.new("\n") << (list = List.new [Space.new(" ")] of Node)
-            list
+        if node = nodes.select(List)[key]?
+          if keys.size == 1
+            nodes.delete node
           else
-            raise "index '#{key}' out of range"
+            keys.shift
+            lookup_remove keys, node.values, :list
           end
+        else
+          raise "index '#{key}' out of range for list"
         end
       end
     end
