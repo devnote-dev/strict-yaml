@@ -164,18 +164,8 @@ module StrictYAML
 
     private def write(node : List) : Nil
       @io << '-'
-      i = 0
-      loop do
-        case inner = node.values[i]?
-        when Nil
-          break
-        when Newline
-          write inner
-          @io << '-' if node.values[i += 1]?
-        else
-          write inner
-          i += 1
-        end
+      node.values.each do |value|
+        write value
       end
     end
 
@@ -189,7 +179,7 @@ module StrictYAML
 
     private def write(node : Comment) : Nil
       node.value.each_line do |line|
-        @io << "# " << line << '\n'
+        @io << '#' << line << '\n'
       end
     end
 
