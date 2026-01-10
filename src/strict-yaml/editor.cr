@@ -14,7 +14,7 @@ module StrictYAML
     end
 
     def insert(keys : Enumerable(KeyType), value : ValueType) : Nil
-      lookup_insert keys, value, @document.nodes, @document.core_type
+      lookup_insert keys, 0, value, @document.nodes, @document.core_type
     end
 
     def update(key : KeyType, value : ValueType) : Nil
@@ -33,11 +33,11 @@ module StrictYAML
       lookup_remove keys, @document.nodes, @document.core_type
     end
 
-    private def lookup_insert(keys : Enumerable(KeyType), value : ValueType,
+    private def lookup_insert(keys : Enumerable(KeyType), index : Int32, value : ValueType,
                               nodes : Array(Node), type : Document::CoreType) : Nil
       raise "cannot index a scalar document" if type.scalar?
 
-      case key = keys[0]
+      case key = keys[index]
       in String, Symbol
         raise "cannot index a list item with a string key" unless type.mapping?
 
@@ -46,21 +46,17 @@ module StrictYAML
           if keys.size == 1
             raise "key '#{key.value}' already exists in mapping"
           else
-            keys.shift
-            lookup_insert keys, value, node.values, :mapping
+            lookup_insert keys, index + 1, value, node.values, :mapping
           end
         else
-          if keys.size == 1
-            if space = nodes[1]?.as?(Space)
-              nodes << Newline.new("\n") << space
-            else
-              nodes << Newline.new("\n")
-            end
-
-            nodes << Mapping.new(key, [Space.new(" "), parse value])
-          else
+          if index != keys.size - 1
             raise "key '#{key.value}' not found in mapping"
           end
+
+          unless index == 0
+            nodes.clear << Newline.new("\n") << Space.new("  " * index)
+          end
+          nodes << Mapping.new key, [Space.new(" "), parse value]
         end
       in Int32
         raise "cannot index a mapping item with an integer key" unless type.list?
