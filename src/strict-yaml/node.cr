@@ -34,6 +34,10 @@ module StrictYAML
     def &(other : Location) : Location
       Location[@value[0], @value[1]].end_at(*other.end)
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Location(#{@value[0]}:#{@value[2]}-#{@value[1]}:#{@value[3]})"
+    end
   end
 
   abstract class Node
@@ -72,6 +76,12 @@ module StrictYAML
     def ==(other : Space) : Bool
       @value == other.value
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Space("
+      @value.pretty_print pp
+      pp.text ")"
+    end
   end
 
   class Newline < Node
@@ -95,6 +105,12 @@ module StrictYAML
 
     def ==(other : Newline) : Bool
       @value == other.value
+    end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Newline("
+      @value.pretty_print pp
+      pp.text ")"
     end
   end
 
@@ -128,6 +144,12 @@ module StrictYAML
     def ==(other : Scalar) : Bool
       @value == other.value
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Scalar("
+      @value.pretty_print pp
+      pp.text ")"
+    end
   end
 
   class Boolean < Node
@@ -148,6 +170,12 @@ module StrictYAML
     def ==(other : Boolean) : Bool
       @value == other.value
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Boolean("
+      @value.pretty_print pp
+      pp.text ")"
+    end
   end
 
   class Null < Node
@@ -165,6 +193,10 @@ module StrictYAML
 
     def ==(other : Null) : Bool
       true
+    end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Null"
     end
   end
 
@@ -195,6 +227,20 @@ module StrictYAML
     def ==(other : Mapping) : Bool
       @key == other.key && @values == other.values
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Mapping("
+      pp.group 1 do
+        pp.breakable ""
+        pp.text "key: "
+        @key.pretty_print pp
+        pp.comma
+
+        pp.text "values: "
+        @values.pretty_print pp
+      end
+      pp.text ")"
+    end
   end
 
   class List < Node
@@ -215,6 +261,23 @@ module StrictYAML
     def ==(other : List) : Bool
       @values == other.values
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "List(#{@values.size})["
+      unless @values.empty?
+        pp.group 1 do
+          pp.breakable ""
+          @values[0].pretty_print pp
+          if @values.size > 1
+            @values.skip(1).each do |value|
+              pp.comma
+              value.pretty_print pp
+            end
+          end
+        end
+      end
+      pp.text "]"
+    end
   end
 
   class DocumentStart < Node
@@ -229,6 +292,10 @@ module StrictYAML
     def ==(other : DocumentStart) : Bool
       true
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "DocumentStart"
+    end
   end
 
   class DocumentEnd < Node
@@ -242,6 +309,10 @@ module StrictYAML
 
     def ==(other : DocumentEnd) : Bool
       true
+    end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "DocumentEnd"
     end
   end
 
@@ -263,6 +334,12 @@ module StrictYAML
     def ==(other : Comment) : Bool
       @value == other.value
     end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Comment("
+      @value.pretty_print pp
+      pp.text ")"
+    end
   end
 
   class Directive < Node
@@ -282,6 +359,12 @@ module StrictYAML
 
     def ==(other : Directive) : Bool
       @value == other.value
+    end
+
+    def pretty_print(pp : PrettyPrint) : Nil
+      pp.text "Directive("
+      @value.pretty_print pp
+      pp.text ")"
     end
   end
 end
