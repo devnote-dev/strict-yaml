@@ -153,7 +153,7 @@ module StrictYAML
   end
 
   class Boolean < Node
-    property value : Bool # ameba:disable Style/QueryBoolMethods
+    property value : Bool # ameba:disable Naming/QueryBoolMethods
 
     def self.new(value : Bool)
       new Location[0, 0], value
