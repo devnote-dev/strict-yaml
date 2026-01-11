@@ -53,9 +53,9 @@ module StrictYAML
             raise "key '#{key.value}' not found in mapping"
           end
 
-          unless index == 0
-            nodes.clear << Newline.new("\n") << Space.new("  " * index)
-          end
+          nodes.clear if nodes[-1].is_a?(Null)
+          nodes << Newline.new("\n") unless nodes[-1]?.is_a?(Newline)
+          nodes << Space.new("  " * index) unless index == 0
           nodes << Mapping.new key, [Space.new(" "), parse value]
         end
       in Int32
@@ -65,8 +65,8 @@ module StrictYAML
           if keys.size == 1
             nodes.insert key, List.new [Space.new(" "), (parse value), Newline.new("\n")]
           else
-            keys.shift
-            lookup_insert keys, value, node.values, :list
+            keys.shift # TODO: move to fix for mapping
+            lookup_insert keys, index, value, node.values, :list
           end
         else
           nodes << Newline.new("\n") << List.new [Space.new(" "), (parse value)]
