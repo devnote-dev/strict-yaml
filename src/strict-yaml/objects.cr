@@ -1,21 +1,21 @@
 class Object
-  def self.from_yaml(source : String)
+  def self.from_strict_yaml(source : String)
     new StrictYAML.parse source
   end
 
-  def self.from_yaml(value : StrictYAML::Any)
+  def self.from_strict_yaml(value : StrictYAML::Any)
     new value
   end
 
-  def to_yaml : String
+  def to_strict_yaml : String
     String.build do |io|
-      to_yaml io
+      to_strict_yaml io
     end
   end
 
-  def to_yaml(io : IO) : Nil
+  def to_strict_yaml(io : IO) : Nil
     builder = StrictYAML::Builder.new io
-    to_yaml builder
+    to_strict_yaml builder
     builder.close
   end
 end
@@ -25,7 +25,7 @@ struct Nil
     nil
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.null
   end
 end
@@ -36,7 +36,7 @@ end
       value.to_i{{ base.id }}
     end
 
-    def to_yaml(yaml : StrictYAML::Builder) : Nil
+    def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
       yaml.scalar self
     end
   end
@@ -48,7 +48,7 @@ end
       value.to_f{{ base.id }}
     end
 
-    def to_yaml(yaml : StrictYAML::Builder) : Nil
+    def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
       yaml.scalar self
     end
   end
@@ -59,7 +59,7 @@ class String
     value.as_s
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.scalar self
   end
 end
@@ -69,7 +69,7 @@ struct Bool
     value.as_bool
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.boolean self
   end
 end
@@ -81,7 +81,7 @@ struct Char
     chars[0]
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.scalar self
   end
 end
@@ -91,7 +91,7 @@ struct Path
     new value.as_s
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.scalar self
   end
 end
@@ -105,9 +105,9 @@ class Array(T)
     arr
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.list do |list|
-      each &.to_yaml list
+      each &.to_strict_yaml list
     end
   end
 end
@@ -121,9 +121,9 @@ class Deque(T)
     deq
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.list do |list|
-      each &.to_yaml list
+      each &.to_strict_yaml list
     end
   end
 end
@@ -137,9 +137,9 @@ struct Set(T)
     set
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.list do |list|
-      each &.to_yaml list
+      each &.to_strict_yaml list
     end
   end
 end
@@ -156,9 +156,9 @@ struct Tuple(*T)
     {% end %}
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.list do |list|
-      each &.to_yaml list
+      each &.to_strict_yaml list
     end
   end
 end
@@ -172,7 +172,7 @@ class Hash(K, V)
     hash
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.mapping do |m|
       each do |key, value|
         m.scalar key
@@ -199,7 +199,7 @@ struct NamedTuple
         case k.as_s
         {% for key, type in T %}
           when {{ key.stringify }}
-            %var{key.id} = {{ type }}.from_yaml v
+            %var{key.id} = {{ type }}.from_strict_yaml v
             %found{key.id} = true
         {% end %}
         end
@@ -221,7 +221,7 @@ struct NamedTuple
     {% end %}
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.mapping do |m|
       each do |key, value|
         m.scalar key
@@ -252,7 +252,7 @@ struct Enum
     {% end %}
   end
 
-  def to_yaml(yaml : StrictYAML::Builder) : Nil
+  def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
     yaml.scalar value
   end
 end
@@ -274,7 +274,7 @@ struct Union(*T)
       {% others = T.reject { |t| primitives.includes?(t) } %}
       {% for type in others %}
         begin
-          return {{ type }}.from_yaml value
+          return {{ type }}.from_strict_yaml value
         rescue StrictYAML::ParseError
         end
       {% end %}

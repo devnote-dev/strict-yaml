@@ -49,7 +49,7 @@ module StrictYAML
           case key.as_s
           {% for name, prop in props %}
             when {{ prop[:key] }}
-              %var{name} = {{ prop[:converter] || prop[:type] }}.from_yaml value
+              %var{name} = {{ prop[:converter] || prop[:type] }}.from_strict_yaml value
               %found{name} = true
           {% end %}
           else
@@ -73,7 +73,7 @@ module StrictYAML
       {% end %}
     end
 
-    def to_yaml(yaml : StrictYAML::Builder) : Nil
+    def to_strict_yaml(yaml : StrictYAML::Builder) : Nil
       {% begin %}
         yaml.mapping do |m|
           {% for ivar in @type.instance_vars %}

@@ -15,54 +15,54 @@ end
 
 describe StrictYAML do
   it "parses to integers" do
-    value = Int32.from_yaml "123456"
+    value = Int32.from_strict_yaml "123456"
 
     value.should be_a Int32
     value.should eq 123456
   end
 
   it "parses to floats" do
-    value = Float64.from_yaml "3.14159265"
+    value = Float64.from_strict_yaml "3.14159265"
 
     value.should be_a Float64
     value.should eq 3.14159265_f64
   end
 
   it "parses to strings" do
-    value = String.from_yaml "foo bar baz"
+    value = String.from_strict_yaml "foo bar baz"
 
     value.should be_a String
     value.should eq "foo bar baz"
   end
 
   it "parses to booleans" do
-    value = Bool.from_yaml "true"
+    value = Bool.from_strict_yaml "true"
 
     value.should be_a Bool
     value.should be_true
 
-    value = Bool.from_yaml "false"
+    value = Bool.from_strict_yaml "false"
 
     value.should be_a Bool
     value.should be_false
   end
 
   it "parses to char" do
-    value = Char.from_yaml "0"
+    value = Char.from_strict_yaml "0"
 
     value.should be_a Char
     value.should eq '0'
   end
 
   it "parses to paths" do
-    value = Path.from_yaml "/dev/null"
+    value = Path.from_strict_yaml "/dev/null"
 
     value.should be_a Path
     value.should eq Path["/dev/null"]
   end
 
   it "parses to an array" do
-    value = Array(Int32).from_yaml <<-YAML
+    value = Array(Int32).from_strict_yaml <<-YAML
       - 123
       - 456
       - 789
@@ -74,7 +74,7 @@ describe StrictYAML do
   end
 
   it "parses to a set" do
-    value = Set(Int32).from_yaml <<-YAML
+    value = Set(Int32).from_strict_yaml <<-YAML
       - 456
       - 123
       - 789
@@ -88,7 +88,7 @@ describe StrictYAML do
   end
 
   it "parses to a tuple" do
-    value = Tuple(String, String).from_yaml <<-YAML
+    value = Tuple(String, String).from_strict_yaml <<-YAML
       - foo
       - bar
       YAML
@@ -98,7 +98,7 @@ describe StrictYAML do
   end
 
   it "parses to a hash" do
-    value = Hash(String, String).from_yaml <<-YAML
+    value = Hash(String, String).from_strict_yaml <<-YAML
       foo: bar
       baz: qux
       YAML
@@ -108,7 +108,7 @@ describe StrictYAML do
   end
 
   it "parses to a named tuple" do
-    value = NamedTuple(foo: String, bar: Int32).from_yaml <<-YAML
+    value = NamedTuple(foo: String, bar: Int32).from_strict_yaml <<-YAML
       foo: 12
       bar: 34
       YAML
@@ -118,7 +118,7 @@ describe StrictYAML do
   end
 
   it "parses normal enums" do
-    value = Array(Color).from_yaml <<-YAML
+    value = Array(Color).from_strict_yaml <<-YAML
         - red
         - blue
         YAML
@@ -129,7 +129,7 @@ describe StrictYAML do
 
   # FIXME: doesn't work in specs because of macro generation
   # it "parses flag enums" do
-  #   value = Mode.from_yaml <<-YAML
+  #   value = Mode.from_strict_yaml <<-YAML
   #       - read
   #       - write
   #       YAML
