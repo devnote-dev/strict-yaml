@@ -243,6 +243,16 @@ describe StrictYAML::Parser do
       hash.values.size.should eq 1
       hash.values[0].should eq "bar"
     end
+
+    it "parses list-like scalars for mapping values" do
+      nodes = parse "foo: -"
+      hash = nodes[0].to_object.should be_a Hash(StrictYAML::Any, StrictYAML::Any)
+      hash.keys.size.should eq 1
+      hash.keys[0].should eq "foo"
+
+      hash.values.size.should eq 1
+      hash.values[0].should eq "-"
+    end
   end
 
   describe StrictYAML::Null do

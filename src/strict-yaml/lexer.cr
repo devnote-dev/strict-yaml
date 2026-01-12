@@ -29,7 +29,7 @@ module StrictYAML
     end
 
     def value : String
-      @value.as(String)
+      @value.not_nil!("BUG: value called on token kind #{@kind}")
     end
 
     def value=(@value)
@@ -105,7 +105,7 @@ module StrictYAML
           next_char
           Token.new :document_start, location
         else
-          Token.new :list, location
+          Token.new :list, location, "-" # special case for scalars
         end
       when '.'
         if next_char == '.' && next_char == '.'
